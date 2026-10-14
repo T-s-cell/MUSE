@@ -14,6 +14,11 @@ from ts_benchmark.utils.get_device import get_device
 from .models.model import MUSE as MUSEModel
 from .utils.util import freq_to_seasonality_list
 
+try:
+    from repro_tools import get_hook as _repro_get_hook
+except ImportError:
+    _repro_get_hook = None
+
 
 MODEL_HYPER_PARAMS = {
     "arch": "mae_base",
@@ -398,6 +403,21 @@ class MUSE(DeepForecastingModelBase):
         gate_prediction = gate * channel.detach() + (1 - gate) * tp.detach()
         tp_loss = torch.mean((tp - processed_target) ** 2)
         gate_loss = torch.mean((gate_prediction - processed_target) ** 2)
+        if _repro_get_hook is not None:
+            hook = _repro_get_hook()
+            if hook is not None:
+                hook.note_loss_components(
+                    channel_loss=torch.mean(
+                        (channel - processed_target) ** 2
+                    ),
+                    tp_loss=tp_loss,
+                    gate_loss=gate_loss,
+                    gate_value=gate,
+                    shapes={
+                        "channel": list(channel.shape),
+                        "tp": list(tp.shape),
+                    },
+                )
         return {
             "output": result["channel"],
             "additional_loss": tp_loss + gate_loss,

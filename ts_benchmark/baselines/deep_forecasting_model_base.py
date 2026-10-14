@@ -21,6 +21,11 @@ from ts_benchmark.baselines.utils import (
 from ts_benchmark.models.model_base import ModelBase, BatchMaker
 from ts_benchmark.utils.data_processing import split_time
 
+try:
+    from repro_tools import get_hook as _repro_get_hook
+except ImportError:
+    _repro_get_hook = None
+
 logger = logging.getLogger(__name__)
 
 # Default hyper parameters
@@ -384,6 +389,7 @@ class DeepForecastingModelBase(ModelBase):
             self.multi_forecasting_hyper_param_tune(train_valid_data)
 
         self.model = self._init_model()
+        hook = _repro_get_hook() if _repro_get_hook is not None else None
 
         device_ids = np.arange(torch.cuda.device_count()).tolist()
         if len(device_ids) > 1 and self.config.parallel_strategy == "DP":
@@ -431,8 +437,20 @@ class DeepForecastingModelBase(ModelBase):
             drop_last=train_drop_last,
         )
 
+        if hook is not None:
+            hook.on_data_ready(
+                self,
+                train_dataset,
+                self.train_data_loader,
+                valid_data_loader if train_ratio_in_tv != 1 else None,
+                series_dim,
+            )
+
         # Define the loss function and optimizer
         criterion, optimizer = self._init_criterion_and_optimizer()
+
+        if hook is not None:
+            hook.on_train_ready(self, optimizer, criterion)
 
         if config.use_amp == 1:
             scaler = torch.cuda.amp.GradScaler()
@@ -443,6 +461,8 @@ class DeepForecastingModelBase(ModelBase):
 
         self.early_stopping = self._init_early_stopping()
         self.model.to(device)
+        if hook is not None:
+            hook.on_fit_start(self)
         total_params = sum(
             p.numel() for p in self.model.parameters() if p.requires_grad
         )
@@ -451,6 +471,7 @@ class DeepForecastingModelBase(ModelBase):
 
         for epoch in range(config.num_epochs):
             self.model.train()
+            repro_stop = False
             # for input, target, input_mark, target_mark in train_data_loader:
             for i, (input, target, input_mark, target_mark) in enumerate(
                 self.train_data_loader
@@ -462,6 +483,8 @@ class DeepForecastingModelBase(ModelBase):
                     input_mark.to(device),
                     target_mark.to(device),
                 )
+                if hook is not None:
+                    hook.on_step_begin(self, input, target, input_mark, target_mark)
                 # decoder input
                 out_loss = self._process(input, target, input_mark, target_mark)
                 additional_loss = 0
@@ -476,6 +499,9 @@ class DeepForecastingModelBase(ModelBase):
 
                 total_loss = loss + additional_loss
 
+                if hook is not None:
+                    hook.on_loss(self, loss, additional_loss)
+
                 if config.use_amp == 1:
                     scaler.scale(total_loss).backward()
                     scaler.step(optimizer)
@@ -484,11 +510,25 @@ class DeepForecastingModelBase(ModelBase):
                     total_loss.backward()
                     optimizer.step()
 
+                if hook is not None and hook.on_step_end(self, optimizer, epoch, i):
+                    repro_stop = True
+                    break
+
                 if self.config.lradj == "TST":
                     self._adjust_lr(optimizer, epoch + 1, config)
 
+            if repro_stop:
+                break
+
             if train_ratio_in_tv != 1:
-                valid_loss = self.validate(valid_data_loader, series_dim, criterion)
+                if hook is not None:
+                    valid_loss = hook.timed_validate(
+                        self, valid_data_loader, series_dim, criterion
+                    )
+                else:
+                    valid_loss = self.validate(
+                        valid_data_loader, series_dim, criterion
+                    )
                 improved = self.early_stopping(valid_loss, self.model)
                 if improved:
                     self.check_point = self.save_checkpoint(self.model)
@@ -497,6 +537,9 @@ class DeepForecastingModelBase(ModelBase):
 
             if self.config.lradj != "TST":
                 self._adjust_lr(optimizer, epoch + 1, config)
+
+        if hook is not None:
+            hook.on_fit_end(self)
 
     def forecast(
         self,
