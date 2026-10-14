@@ -32,7 +32,7 @@ def _loss_parts(muse_adapter, batch):
     gate = torch.sigmoid(core.fusion_logit)
     gate_prediction = gate * channel.detach() + (1 - gate) * tp.detach()
     gate_loss = torch.mean((gate_prediction - processed_target) ** 2)
-    return core, processed_target, channel, tp, channel_loss, tp_loss, gate
+    return core, processed_target, channel, tp, channel_loss, tp_loss, gate_loss
 
 
 def run_step_audit(muse_adapter, batch, step, out_dir, results):

@@ -172,12 +172,23 @@ def dump_predictions(muse_adapter, loader):
 
 
 def main():
+    if os.environ.get("MUSE_REPRO_FORCE_DETERMINISTIC", "") == "1":
+        # match the forcing used by the audited run so kernels are selected
+        # identically (CUBLAS_WORKSPACE_CONFIG must come from the environment)
+        torch.use_deterministic_algorithms(True)
+    # replicate the strategy's official environment (fix_all_random_seed also
+    # flips cudnn flags: deterministic=True, benchmark=False, enabled=False)
+    from ts_benchmark.utils.random_utils import fix_all_random_seed
+
+    fix_all_random_seed(int(os.environ.get("MUSE_REPRO_SEED", "2021")))
     ap = argparse.ArgumentParser()
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--step", type=int, default=None)
     ap.add_argument("--best", action="store_true")
     ap.add_argument("--mae-sha", default=None,
                     help="expected sha256 of the MAE checkpoint")
+    ap.add_argument("--mae-path", default=None,
+                    help="MAE checkpoint path if not recorded in the manifest")
     ap.add_argument("--data-sha", default=None,
                     help="expected sha256 of ETTh1.csv")
     args = ap.parse_args()
@@ -206,7 +217,7 @@ def main():
 
     # 1. hashes ----------------------------------------------------------
     csv_sha = sha256_file(os.path.join(FORECASTING_DATASET_PATH, RUN["series"]))
-    mae_path = manifest.get("mae_ckpt_path")
+    mae_path = manifest.get("mae_ckpt_path") or args.mae_path
     mae_sha = sha256_file(mae_path) if mae_path else None
     check("data_sha_expected",
           args.data_sha is None or args.data_sha == csv_sha,
@@ -218,8 +229,8 @@ def main():
 
     # 2. pipeline rebuild --------------------------------------------------
     hyper = dict(HYPER_PARAMS)
-    if manifest.get("mae_ckpt_path"):
-        hyper["checkpoint_path"] = manifest["mae_ckpt_path"]
+    if mae_path:
+        hyper["checkpoint_path"] = mae_path
     pipe = rebuild_pipeline(hyper)
     m = pipe["muse_adapter"]
     m._series_dim = pipe["valid_ds"].dataset.shape[-1]
@@ -248,7 +259,7 @@ def main():
     )
     m.model = m._init_model()
     m.model.load_state_dict(full_state, strict=True)
-    device = next(m.model.parameters()).device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     m.model.to(device)
 
     # 5. official validate -----------------------------------------------------

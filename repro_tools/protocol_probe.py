@@ -195,7 +195,7 @@ def main():
         }
 
         # ---- real MUSE config tune (freq/label_len) --------------------
-        m = MUSE()
+        m = MUSE(seq_len=RUN["seq_len"])
         m.config.seq_len = RUN["seq_len"]
         MUSE.multi_forecasting_hyper_param_tune(m, tv_data)
         report["tuned_config"] = {

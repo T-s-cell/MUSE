@@ -105,6 +105,9 @@ class ReproHook:
 
     def on_fit_start(self, model_base):
         self.model_base = model_base
+        if self.cfg.force_deterministic:
+            # comparison-runs only: not part of the official perf configuration
+            torch.use_deterministic_algorithms(True)
         core = model_base._core_model()
         self.fingerprint = module_fingerprint(core.vision_model)
         self.fit_t0 = time.perf_counter()
