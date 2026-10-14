@@ -63,6 +63,7 @@ class ReproHook:
         self.criterion = None
         self.valid_loader = None
         self.series_dim = None
+        self.valid_start_abs = None
         self._first_audited = None
         self._param_states = {}
         self._param_sha = {}
@@ -76,16 +77,29 @@ class ReproHook:
                       valid_loader, series_dim):
         bs = model_base.config.batch_size
         n_train = len(train_dataset)
+        # absolute row of valid_data's start in the original series:
+        # train rows = n_train + seq_len + horizon - 1, and valid starts
+        # seq_len rows earlier (history overlap of train/valid split)
+        horizon = model_base.config.horizon
+        seq_len = model_base.config.seq_len
+        self.valid_start_abs = n_train + horizon - 1
         self.train_info = {
             "train_windows": n_train,
             "train_batches_full": n_train // bs,
             "train_drop_last": train_loader.drop_last,
             "train_tail_samples": n_train % bs,
+            "train_rows": n_train + seq_len + horizon - 1,
+            "valid_rows": (
+                None
+                if valid_loader is None
+                else len(valid_loader.dataset) + seq_len + horizon - 1
+            ),
+            "valid_data_start_abs": self.valid_start_abs,
             "valid_windows": None if valid_loader is None else len(valid_loader.dataset),
             "valid_batches": None if valid_loader is None else len(valid_loader),
             "series_dim": series_dim,
-            "seq_len": model_base.config.seq_len,
-            "horizon": model_base.config.horizon,
+            "seq_len": seq_len,
+            "horizon": horizon,
             "label_len": getattr(model_base.config, "label_len", None),
             "freq": getattr(model_base.config, "freq", None),
             "periodicity": getattr(model_base.config, "periodicity", None),
@@ -364,25 +378,27 @@ class ReproHook:
     def _valid_window_borders(self, loader):
         """Absolute window identity of the valid loader windows.
 
-        Window index i of DatasetForTransformer: input = rows [i, i+1440)
-        of valid_data, prediction target = the 96 rows ending at
-        i + history + horizon. valid_data preserves the original series
-        RangeIndex, so index[0] is the absolute row offset.
+        Window index i of DatasetForTransformer: input = rows [i, i+seq_len)
+        of valid_data, prediction target = the horizon rows starting at
+        valid_data_start_abs + i + seq_len. The absolute offset comes from
+        the split formula (n_train_windows + horizon - 1), NOT from the
+        DataFrame index (which is a DatetimeIndex in this pipeline).
         """
         ds = loader.dataset
         vdf = ds.dataset
-        start_abs = int(vdf.index[0])
-        pred_start = start_abs + np.arange(len(ds), dtype=np.int64) + int(
-            ds.history_length
-        )
+        start_abs = self.valid_start_abs
+        hist = int(ds.history_length)
+        pred_start = start_abs + np.arange(len(ds), dtype=np.int64) + hist
         return {
             "pred_start": pred_start,
             "valid_data_start_abs": start_abs,
-            "valid_data_end_abs_exclusive": int(vdf.index[-1]) + 1,
-            "history_length": int(ds.history_length),
+            "valid_data_end_abs_exclusive": start_abs + len(vdf),
+            "history_length": hist,
             "prediction_length": int(ds.prediction_length),
             "label_length": int(ds.label_length),
             "n_windows": int(len(ds)),
+            "first_pred_row_ts": str(vdf.index[hist]),
+            "last_pred_row_ts": str(vdf.index[hist + len(ds) - 1]),
         }
 
     # ---- test ----------------------------------------------------------

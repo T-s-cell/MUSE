@@ -137,6 +137,7 @@ def rebuild_pipeline(hyper_params):
         "valid_loader": loader,
         "csv_path": csv_path,
         "valid_data": valid_data,
+        "train_data": train_data,
     }
 
 
@@ -277,7 +278,8 @@ def main():
     saved = np.load(rec["saved"]["preds_path"])
     wb = saved["window_border"] if "window_border" in saved.files else None
     if wb is not None and wb.shape[-1] == len(pipe["valid_ds"]):
-        expected_border = int(pipe["valid_ds"].dataset.index[0]) + np.arange(
+        valid_start_abs = len(pipe["train_data"]) - RUN["seq_len"]
+        expected_border = valid_start_abs + np.arange(
             len(pipe["valid_ds"]), dtype=np.int64
         ) + RUN["seq_len"]
         got = np.asarray(wb, dtype=np.int64)
