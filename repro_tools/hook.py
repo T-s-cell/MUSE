@@ -61,6 +61,7 @@ class ReproHook:
         self.series_dim = None
         self._first_audited = None
         self._param_states = {}
+        self._param_sha = {}
 
     @classmethod
     def from_env(cls):
@@ -197,6 +198,8 @@ class ReproHook:
             "target_sha": target_sha,
         }
         self.rows.append(row)
+        if self.cfg.param_sha:
+            self._param_sha[step] = trainable_checksum(model_base._core_model())
         if step % self.cfg.log_every == 0:
             self._steps_writer.writerow([
                 row[k] for k in [
@@ -420,6 +423,7 @@ class ReproHook:
                 for name, states in sorted(self._param_states.items())
             },
             "audit_steps": [r["step"] for r in self.audit_records],
+            "param_sha": {str(k): v for k, v in sorted(self._param_sha.items())},
             "config_effective": dict(vars(model_base.config)),
         }
         write_json(os.path.join(self.cfg.out_dir, "summary.json"), summary)
