@@ -107,10 +107,12 @@ def grad_snapshot(model):
 
 
 def grad_max_abs(snapshot):
-    out = {}
-    for name, g in snapshot.items():
-        out[name] = 0.0 if g is None else float(g.abs().max().item())
-    return out
+    # None must stay None: a param not in the graph (grad is None) is a
+    # different state from a param receiving a structurally zero gradient
+    return {
+        name: (None if g is None else float(g.abs().max().item()))
+        for name, g in snapshot.items()
+    }
 
 
 def json_safe(obj):

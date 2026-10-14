@@ -19,10 +19,11 @@ import csv
 import os
 import time
 
+import numpy as np
 import torch
 
 from .audit import run_step_audit
-from .bundle import save_val_point, write_manifest
+from .bundle import save_best_point, save_val_point, write_manifest
 from .common import (
     ReproConfig,
     batch_sha256,
@@ -46,6 +47,9 @@ class ReproHook:
         self.val_records = []
         self.audit_records = []
         self.best = None
+        self.best_records = []
+        self.epoch_records = []
+        self.cur_epoch = -1
         self.loss_cache = None
         self.loss_cache_parts = None
         self.fingerprint = None
@@ -169,6 +173,7 @@ class ReproHook:
     def on_step_end(self, model_base, optimizer, epoch, i):
         self.global_step += 1
         step = self.global_step
+        self.cur_epoch = epoch
         cuda_ms, wall_ms = self.timer.end()
 
         loss_t, addl_t = self.loss_cache
@@ -251,27 +256,174 @@ class ReproHook:
 
     def timed_validate(self, model_base, valid_data_loader, series_dim,
                        criterion, tag="epoch_end"):
-        def run():
-            reset_peak_mem()
-            t0 = time.perf_counter()
-            val = model_base.validate(valid_data_loader, series_dim, criterion)
-            elapsed = time.perf_counter() - t0
-            mem = read_peak_mem()
-            return val, elapsed, mem
+        """Official epoch-end validate: official RNG behaviour preserved.
 
-        was_training = model_base.model.training
-        val, elapsed, mem = self._rng_guarded(run)
-        if was_training:
-            model_base.model.train()
-        self.val_records.append({
+        No RNG save/restore and no train-flag restore here — the official
+        loop consumes whatever RNG this validate consumes and leaves the
+        model in eval until the next epoch's .train(). The training-segment
+        peak memory is read BEFORE reset clears it.
+        """
+        train_peak = read_peak_mem()
+        reset_peak_mem()
+        t0 = time.perf_counter()
+        val = model_base.validate(valid_data_loader, series_dim, criterion)
+        elapsed = time.perf_counter() - t0
+        mem = read_peak_mem()
+        rec = {
             "tag": tag,
+            "epoch": self.cur_epoch,
             "step": self.global_step,
             "val_mse_fused": float(val),
             "elapsed_s": elapsed,
+            "rng_guarded": False,
+            "train_peak_alloc_mb": train_peak.get("peak_alloc_mb"),
+            "train_peak_reserved_mb": train_peak.get("peak_reserved_mb"),
             **mem,
-        })
+        }
+        self.val_records.append(rec)
         self._write_val_csv()
         return val
+
+    def on_best(self, model_base, valid_loss):
+        """Official improved=True: persist best checkpoint bundle.
+
+        The prediction dump is an EXTRA pass and stays RNG-guarded; the
+        official best deepcopy (model_base.check_point) is what gets saved.
+        Save/dump elapsed times are recorded separately from the official
+        validation time.
+        """
+        epoch = self.cur_epoch
+        preds = targets = None
+        border_meta = None
+        dump_elapsed = 0.0
+        if self.cfg.dump_preds and self.valid_loader is not None:
+            rng = save_rng()
+            try:
+                t0 = time.perf_counter()
+                preds, targets = self._dump_val_predictions(
+                    model_base, self.valid_loader, self.series_dim
+                )
+                border_meta = self._valid_window_borders(self.valid_loader)
+                dump_elapsed = time.perf_counter() - t0
+            finally:
+                restore_rng(rng)
+                # official state at this point is eval (validate just ran);
+                # keep it — the next epoch's .train() is official behaviour
+                model_base.model.eval()
+
+        t1 = time.perf_counter()
+        borders_arr = (
+            border_meta["pred_start"] if border_meta is not None else None
+        )
+        entry = save_best_point(
+            self.cfg.out_dir,
+            model_base.check_point,
+            model_base,
+            epoch=epoch,
+            step=self.global_step,
+            val_mse=float(valid_loss),
+            val_history=self.val_records,
+            preds=preds,
+            targets=targets,
+            window_border=borders_arr,
+            border_meta=border_meta,
+        )
+        save_elapsed = time.perf_counter() - t1
+
+        rec = {
+            "tag": entry["tag"],
+            "epoch": epoch,
+            "step": self.global_step,
+            "val_mse_fused": float(valid_loss),
+            "dump_elapsed_s": dump_elapsed,
+            "save_elapsed_s": save_elapsed,
+            "rng_guarded_dump": True,
+            "saved": {
+                "full_state_path": entry["full_state_path"],
+                "preds_path": entry.get("preds_path"),
+                "point_meta_path": os.path.join(
+                    self.cfg.out_dir, f"best_point_epoch{epoch}.json"
+                ),
+                "scaler_mean": entry["scaler_mean"],
+                "scaler_scale": entry["scaler_scale"],
+                "preds_shape": entry.get("preds_shape"),
+            },
+        }
+        self.best_records.append(rec)
+        self.best = rec
+        if self.val_records:
+            self.val_records[-1]["improved"] = True
+            self.val_records[-1]["best_saved"] = entry["tag"]
+            self.val_records[-1]["dump_elapsed_s"] = dump_elapsed
+            self.val_records[-1]["save_elapsed_s"] = save_elapsed
+        self._write_val_csv()
+        self._write_best_csv()
+        self._write_manifest()
+        return True
+
+    def _valid_window_borders(self, loader):
+        """Absolute window identity of the valid loader windows.
+
+        Window index i of DatasetForTransformer: input = rows [i, i+1440)
+        of valid_data, prediction target = the 96 rows ending at
+        i + history + horizon. valid_data preserves the original series
+        RangeIndex, so index[0] is the absolute row offset.
+        """
+        ds = loader.dataset
+        vdf = ds.dataset
+        start_abs = int(vdf.index[0])
+        pred_start = start_abs + np.arange(len(ds), dtype=np.int64) + int(
+            ds.history_length
+        )
+        return {
+            "pred_start": pred_start,
+            "valid_data_start_abs": start_abs,
+            "valid_data_end_abs_exclusive": int(vdf.index[-1]) + 1,
+            "history_length": int(ds.history_length),
+            "prediction_length": int(ds.prediction_length),
+            "label_length": int(ds.label_length),
+            "n_windows": int(len(ds)),
+        }
+
+    # ---- test ----------------------------------------------------------
+    def on_test_ready(self, all_predicts, targets, index_list, eval_scaler,
+                      mean_metrics, total_inference_time, fit_time):
+        """Official batch-forecast test finished: persist preds/targets.
+
+        all_predicts: [N, horizon, C] post-inverse predictions;
+        index_list: absolute split index per window (test window = rows
+        [index, index+horizon) of the full series).
+        """
+        t0 = time.perf_counter()
+        preds = np.asarray(all_predicts)
+        tgts = np.asarray(targets)
+        borders = np.asarray(index_list, dtype=np.int64)
+        npz_path = os.path.join(self.cfg.out_dir, "test_preds.npz")
+        np.savez_compressed(
+            npz_path, preds=preds, targets=tgts, window_border=borders
+        )
+        dump_elapsed = time.perf_counter() - t0
+        eval_scaler_stats = None
+        if eval_scaler is not None and hasattr(eval_scaler, "mean_"):
+            eval_scaler_stats = {
+                "mean": np.asarray(eval_scaler.mean_).tolist(),
+                "scale": np.asarray(eval_scaler.scale_).tolist(),
+            }
+        report = {
+            "preds_shape": list(preds.shape),
+            "targets_shape": list(tgts.shape),
+            "n_windows": int(len(borders)),
+            "window_border_first": int(borders[0]),
+            "window_border_last": int(borders[-1]),
+            "preds_path": npz_path,
+            "eval_scaler": eval_scaler_stats,
+            "mean_metrics": list(mean_metrics),
+            "official_total_inference_s": float(total_inference_time),
+            "official_fit_s": float(fit_time),
+            "dump_elapsed_s": dump_elapsed,
+        }
+        write_json(os.path.join(self.cfg.out_dir, "test_report.json"), report)
+        return report
 
     def _run_val(self, model_base):
         step = self.global_step
@@ -302,14 +454,18 @@ class ReproHook:
             preds, targets = self._dump_val_predictions(model_base, loader, sd)
             restore_rng(rng)
             model_base.model.train()
+            border_meta = self._valid_window_borders(loader)
         else:
             preds = targets = None
+            border_meta = None
 
         if self.cfg.save_full:
             entry = save_val_point(
                 self.cfg.out_dir, model_base, step, val,
                 preds=preds, targets=targets,
-                window_border=None,
+                window_border=(
+                    border_meta["pred_start"] if border_meta is not None else None
+                ),
             )
             rec["saved"] = {
                 "full_state_path": entry["full_state_path"],
@@ -335,8 +491,6 @@ class ReproHook:
         drop_last=False) so dumped windows match the metric pass 1:1.
         """
         from torch.utils.data import DataLoader
-
-        import numpy as np
 
         config = model_base.config
         horizon = config.horizon
@@ -368,17 +522,35 @@ class ReproHook:
 
     def _write_val_csv(self):
         path = os.path.join(self.cfg.out_dir, "val.csv")
+        cols = [
+            "tag", "epoch", "step", "val_mse_fused", "elapsed_s",
+            "rng_guarded", "improved", "best_saved",
+            "train_peak_alloc_mb", "train_peak_reserved_mb",
+            "peak_alloc_mb", "peak_reserved_mb", "current_alloc_mb",
+            "dump_elapsed_s", "save_elapsed_s",
+        ]
         with open(path, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow([
-                "tag", "step", "val_mse_fused", "elapsed_s",
-                "peak_alloc_mb", "peak_reserved_mb", "current_alloc_mb",
-            ])
+            writer.writerow(cols)
             for r in self.val_records:
+                writer.writerow([r.get(c) for c in cols])
+
+    def _write_best_csv(self):
+        path = os.path.join(self.cfg.out_dir, "best.csv")
+        cols = [
+            "tag", "epoch", "step", "val_mse_fused",
+            "dump_elapsed_s", "save_elapsed_s",
+            "full_state_path", "preds_path",
+        ]
+        with open(path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(cols)
+            for r in self.best_records:
                 writer.writerow([
-                    r["tag"], r["step"], r["val_mse_fused"], r["elapsed_s"],
-                    r.get("peak_alloc_mb"), r.get("peak_reserved_mb"),
-                    r.get("current_alloc_mb"),
+                    r.get("tag"), r.get("epoch"), r.get("step"),
+                    r.get("val_mse_fused"),
+                    r.get("dump_elapsed_s"), r.get("save_elapsed_s"),
+                    r["saved"]["full_state_path"], r["saved"]["preds_path"],
                 ])
 
     # ---- fit end --------------------------------------------------------
@@ -395,7 +567,7 @@ class ReproHook:
         warmup = self.cfg.warmup_steps
         stats = {}
         for key in ("cuda_ms", "wall_ms"):
-            stats[key + "_steps11_100"] = step_stats(
+            stats[f"{key}_steps{warmup + 1}_{self.global_step}"] = step_stats(
                 self.rows, key, warmup + 1, self.global_step
             )
             stats[key + "_all"] = step_stats(self.rows, key, 1, self.global_step)
@@ -405,6 +577,12 @@ class ReproHook:
             for r in self.rows
             if r.get("loss_channel") is not None
         ]
+        val_time_total = sum(
+            r.get("elapsed_s", 0.0) for r in self.val_records
+            if r.get("tag") == "epoch_end"
+        )
+        best_dump_time = sum(r.get("dump_elapsed_s", 0.0) for r in self.best_records)
+        best_save_time = sum(r.get("save_elapsed_s", 0.0) for r in self.best_records)
         summary = {
             "global_step": self.global_step,
             "stop_reason": "max_steps" if self.stop else "natural_end",
@@ -413,8 +591,18 @@ class ReproHook:
             "train_info": self.train_info,
             "timing": stats,
             "warmup_steps": warmup,
+            "official_epoch_validate_time_s": val_time_total,
+            "best_dump_time_s": best_dump_time,
+            "best_save_time_s": best_save_time,
+            "timing_semantics": {
+                "epoch_end_validate_rng_guarded": False,
+                "best_dump_rng_guarded": True,
+                "train_peak_read_before_val_reset": True,
+                "step_wall_after_cuda_sync": True,
+            },
             "val_records": self.val_records,
             "best": self.best,
+            "best_records": self.best_records,
             "loss_decomposition_max_absdiff": max(decomp) if decomp else None,
             "finite_losses": all(
                 r["loss_total"] == r["loss_total"]
@@ -430,11 +618,22 @@ class ReproHook:
             "config_effective": dict(vars(model_base.config)),
         }
         write_json(os.path.join(self.cfg.out_dir, "summary.json"), summary)
+        self._write_manifest()
 
+        if self.stop:
+            raise SystemExit(
+                f"[repro] controlled stop after step {self.global_step} "
+                f"(MUSE_REPRO_MAX_STEPS={self.cfg.max_steps}); bundle saved to "
+                f"{self.cfg.out_dir}"
+            )
+
+    def _write_manifest(self):
         manifest = {
             "out_dir": self.cfg.out_dir,
             "global_step": self.global_step,
+            "cur_epoch": self.cur_epoch,
             "best": self.best,
+            "best_records": self.best_records,
             "val_records": self.val_records,
             "train_info": self.train_info,
             "muse_patch_diff_sha": os.environ.get("MUSE_REPRO_DIFF_SHA"),
@@ -445,10 +644,3 @@ class ReproHook:
             "torch": torch.__version__,
         }
         write_manifest(self.cfg.out_dir, manifest)
-
-        if self.stop:
-            raise SystemExit(
-                f"[repro] controlled stop after step {self.global_step} "
-                f"(MUSE_REPRO_MAX_STEPS={self.cfg.max_steps}); bundle saved to "
-                f"{self.cfg.out_dir}"
-            )

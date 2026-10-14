@@ -532,6 +532,8 @@ class DeepForecastingModelBase(ModelBase):
                 improved = self.early_stopping(valid_loss, self.model)
                 if improved:
                     self.check_point = self.save_checkpoint(self.model)
+                    if hook is not None:
+                        hook.on_best(self, valid_loss)
                 if self.early_stopping.early_stop:
                     break
 

@@ -20,12 +20,14 @@ class StepTimer:
         self.wall_t0 = time.perf_counter()
 
     def end(self):
-        wall_ms = (time.perf_counter() - self.wall_t0) * 1000.0
         cuda_ms = None
         if self.end_event is not None:
             self.end_event.record()
             torch.cuda.synchronize()
             cuda_ms = self.start_event.elapsed_time(self.end_event)
+        elif torch.cuda.is_available():
+            torch.cuda.synchronize()
+        wall_ms = (time.perf_counter() - self.wall_t0) * 1000.0
         return cuda_ms, wall_ms
 
 

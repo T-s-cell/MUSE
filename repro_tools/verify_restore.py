@@ -76,7 +76,8 @@ def load_json(path):
 
 def pick_record(manifest, args):
     records = [
-        r for r in manifest.get("val_records", [])
+        r for r in (manifest.get("val_records", [])
+                    + manifest.get("best_records", []))
         if r.get("saved", {}).get("full_state_path")
     ]
     if not records:
@@ -274,6 +275,19 @@ def main():
 
     # 6. element-wise predictions ------------------------------------------------
     saved = np.load(rec["saved"]["preds_path"])
+    wb = saved["window_border"] if "window_border" in saved.files else None
+    if wb is not None and wb.shape[-1] == len(pipe["valid_ds"]):
+        expected_border = int(pipe["valid_ds"].dataset.index[0]) + np.arange(
+            len(pipe["valid_ds"]), dtype=np.int64
+        ) + RUN["seq_len"]
+        got = np.asarray(wb, dtype=np.int64)
+        check("window_border_matches",
+              np.array_equal(got, expected_border),
+              f"first={int(got[0])} last={int(got[-1])} "
+              f"expected_first={int(expected_border[0])}")
+    else:
+        check("window_border_matches", False,
+              "npz window_border missing or wrong length")
     preds_re, tgts_re = dump_predictions(m, pipe["valid_loader"])
     err_p = float(np.abs(preds_re - saved["preds"]).max())
     err_t = float(np.abs(tgts_re - saved["targets"]).max())

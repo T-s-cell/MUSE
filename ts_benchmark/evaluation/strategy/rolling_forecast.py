@@ -15,6 +15,11 @@ from ts_benchmark.models.model_base import BatchMaker, ModelBase
 from ts_benchmark.utils.data_processing import split_time
 from ts_benchmark.utils.data_processing import split_channel
 
+try:
+    from repro_tools import get_hook as _repro_get_hook
+except ImportError:
+    _repro_get_hook = None
+
 
 class RollingForecastEvalBatchMaker:
     def __init__(
@@ -421,6 +426,19 @@ class RollingForecast(ForecastingStrategy):
             )
             all_test_results.append(single_series_results)
         single_series_results = np.mean(np.stack(all_test_results), axis=0).tolist()
+
+        if _repro_get_hook is not None:
+            _hook = _repro_get_hook()
+            if _hook is not None:
+                _hook.on_test_ready(
+                    all_predicts,
+                    targets,
+                    index_list,
+                    eval_scaler,
+                    single_series_results,
+                    total_inference_time,
+                    end_fit_time - start_fit_time,
+                )
 
         save_true_pred = self._get_scalar_config_value("save_true_pred", series_name)
         actual_data_encoded = self._encode_data(targets) if save_true_pred else np.nan
