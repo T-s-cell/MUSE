@@ -1,0 +1,2516 @@
+{
+  "check_passed": true,
+  "check_problems": [],
+  "configs": [
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/AQWan_h96_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/AQWan",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "AQWan_h96",
+      "dataset_file": "AQWan.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 512
+        },
+        "save_path": "repro/AQWan_h96_seed2021"
+      },
+      "horizon": 96,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"AQWan.csv\" --strategy-args '{\"horizon\": 96}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 96, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.0001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 512}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/AQWan\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 512
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/AQWan",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/AQWan.sh#invocation1",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/AQWan_h192_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/AQWan",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "AQWan_h192",
+      "dataset_file": "AQWan.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 512
+        },
+        "save_path": "repro/AQWan_h192_seed2021"
+      },
+      "horizon": 192,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"AQWan.csv\" --strategy-args '{\"horizon\": 192}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 192, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.0001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 512}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/AQWan\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 512
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/AQWan",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/AQWan.sh#invocation2",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/AQWan_h336_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/AQWan",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "AQWan_h336",
+      "dataset_file": "AQWan.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 512
+        },
+        "save_path": "repro/AQWan_h336_seed2021"
+      },
+      "horizon": 336,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"AQWan.csv\" --strategy-args '{\"horizon\": 336}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 336, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.0001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 512}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/AQWan\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 512
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/AQWan",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/AQWan.sh#invocation3",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/AQWan_h720_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/AQWan",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "AQWan_h720",
+      "dataset_file": "AQWan.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 512
+        },
+        "save_path": "repro/AQWan_h720_seed2021"
+      },
+      "horizon": 720,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"AQWan.csv\" --strategy-args '{\"horizon\": 720}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 720, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 512}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/AQWan\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 512
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/AQWan",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/AQWan.sh#invocation4",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/CzeLan_h96_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/CzeLan",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "CzeLan_h96",
+      "dataset_file": "CzeLan.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/CzeLan_h96_seed2021"
+      },
+      "horizon": 96,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"CzeLan.csv\" --strategy-args '{\"horizon\": 96}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 96, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.0001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/CzeLan\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/CzeLan",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/CzeLan.sh#invocation1",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/CzeLan_h192_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/CzeLan",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "CzeLan_h192",
+      "dataset_file": "CzeLan.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/CzeLan_h192_seed2021"
+      },
+      "horizon": 192,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"CzeLan.csv\" --strategy-args '{\"horizon\": 192}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 192, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/CzeLan\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/CzeLan",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/CzeLan.sh#invocation2",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/CzeLan_h336_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/CzeLan",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "CzeLan_h336",
+      "dataset_file": "CzeLan.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/CzeLan_h336_seed2021"
+      },
+      "horizon": 336,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"CzeLan.csv\" --strategy-args '{\"horizon\": 336}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 336, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.0001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/CzeLan\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/CzeLan",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/CzeLan.sh#invocation3",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/CzeLan_h720_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/CzeLan",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "CzeLan_h720",
+      "dataset_file": "CzeLan.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/CzeLan_h720_seed2021"
+      },
+      "horizon": 720,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"CzeLan.csv\" --strategy-args '{\"horizon\": 720}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 720, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.0001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/CzeLan\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/CzeLan",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/CzeLan.sh#invocation4",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTh1_h96_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTh1",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTh1_h96",
+      "dataset_file": "ETTh1.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1440
+        },
+        "save_path": "repro/ETTh1_h96_seed2021"
+      },
+      "horizon": 96,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTh1.csv\" --strategy-args '{\"horizon\": 96}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 96, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 1440}\" --deterministic \"full\" --gpus 0 --timeout 60000 --save-path \"MUSE/ETTh1\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": false,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1440
+        },
+        "num_workers_flag": null,
+        "save_path": "MUSE/ETTh1",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTh1.sh#invocation1",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTh1_h192_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTh1",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTh1_h192",
+      "dataset_file": "ETTh1.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 2e-06,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1440
+        },
+        "save_path": "repro/ETTh1_h192_seed2021"
+      },
+      "horizon": 192,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTh1.csv\" --strategy-args '{\"horizon\": 192}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 192, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.000002, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 1440}\" --deterministic \"full\" --gpus 0 --timeout 60000 --save-path \"MUSE/ETTh1\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": false,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 2e-06,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1440
+        },
+        "num_workers_flag": null,
+        "save_path": "MUSE/ETTh1",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTh1.sh#invocation2",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTh1_h336_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTh1",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTh1_h336",
+      "dataset_file": "ETTh1.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1440
+        },
+        "save_path": "repro/ETTh1_h336_seed2021"
+      },
+      "horizon": 336,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTh1.csv\" --strategy-args '{\"horizon\": 336}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 336, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 1440}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ETTh1\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1440
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ETTh1",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTh1.sh#invocation3",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTh1_h720_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTh1",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTh1_h720",
+      "dataset_file": "ETTh1.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1440
+        },
+        "save_path": "repro/ETTh1_h720_seed2021"
+      },
+      "horizon": 720,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTh1.csv\" --strategy-args '{\"horizon\": 720}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 720, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 1440}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ETTh1\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1440
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ETTh1",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTh1.sh#invocation4",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTh2_h96_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTh2",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTh2_h96",
+      "dataset_file": "ETTh2.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1728
+        },
+        "save_path": "repro/ETTh2_h96_seed2021"
+      },
+      "horizon": 96,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTh2.csv\" --strategy-args '{\"horizon\": 96}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 96, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 1728}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ETTh2\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1728
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ETTh2",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTh2.sh#invocation1",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTh2_h192_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTh2",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTh2_h192",
+      "dataset_file": "ETTh2.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1728
+        },
+        "save_path": "repro/ETTh2_h192_seed2021"
+      },
+      "horizon": 192,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTh2.csv\" --strategy-args '{\"horizon\": 192}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 192, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 1728}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ETTh2\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1728
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ETTh2",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTh2.sh#invocation2",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTh2_h336_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTh2",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTh2_h336",
+      "dataset_file": "ETTh2.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1728
+        },
+        "save_path": "repro/ETTh2_h336_seed2021"
+      },
+      "horizon": 336,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTh2.csv\" --strategy-args '{\"horizon\": 336}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 336, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 1728}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ETTh2\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1728
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ETTh2",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTh2.sh#invocation3",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTh2_h720_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTh2",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTh2_h720",
+      "dataset_file": "ETTh2.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1728
+        },
+        "save_path": "repro/ETTh2_h720_seed2021"
+      },
+      "horizon": 720,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTh2.csv\" --strategy-args '{\"horizon\": 720}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 720, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 1728}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ETTh2\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 1728
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ETTh2",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTh2.sh#invocation4",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTm1_h96_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTm1",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTm1_h96",
+      "dataset_file": "ETTm1.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/ETTm1_h96_seed2021"
+      },
+      "horizon": 96,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTm1.csv\" --strategy-args '{\"horizon\": 96}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 96, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ETTm1\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ETTm1",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTm1.sh#invocation1",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTm1_h192_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTm1",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTm1_h192",
+      "dataset_file": "ETTm1.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 5e-06,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/ETTm1_h192_seed2021"
+      },
+      "horizon": 192,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTm1.csv\" --strategy-args '{\"horizon\": 192}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 192, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.000005, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ETTm1\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 5e-06,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ETTm1",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTm1.sh#invocation2",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTm1_h336_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTm1",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTm1_h336",
+      "dataset_file": "ETTm1.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/ETTm1_h336_seed2021"
+      },
+      "horizon": 336,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTm1.csv\" --strategy-args '{\"horizon\": 336}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 336, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ETTm1\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ETTm1",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTm1.sh#invocation3",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTm1_h720_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTm1",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTm1_h720",
+      "dataset_file": "ETTm1.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/ETTm1_h720_seed2021"
+      },
+      "horizon": 720,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTm1.csv\" --strategy-args '{\"horizon\": 720}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 720, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ETTm1\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ETTm1",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTm1.sh#invocation4",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTm2_h96_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTm2",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTm2_h96",
+      "dataset_file": "ETTm2.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "save_path": "repro/ETTm2_h96_seed2021"
+      },
+      "horizon": 96,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTm2.csv\" --strategy-args '{\"horizon\": 96}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 96, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.0001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 4032}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ETTm2\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ETTm2",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTm2.sh#invocation1",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTm2_h192_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTm2",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTm2_h192",
+      "dataset_file": "ETTm2.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 5e-06,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "save_path": "repro/ETTm2_h192_seed2021"
+      },
+      "horizon": 192,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTm2.csv\" --strategy-args '{\"horizon\": 192}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 192, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.000005, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 4032}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ETTm2\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 5e-06,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ETTm2",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTm2.sh#invocation2",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTm2_h336_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTm2",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTm2_h336",
+      "dataset_file": "ETTm2.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 5e-06,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "save_path": "repro/ETTm2_h336_seed2021"
+      },
+      "horizon": 336,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTm2.csv\" --strategy-args '{\"horizon\": 336}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 336, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.000005, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 4032}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ETTm2\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 5e-06,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ETTm2",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTm2.sh#invocation3",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ETTm2_h720_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ETTm2",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ETTm2_h720",
+      "dataset_file": "ETTm2.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 5e-06,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "save_path": "repro/ETTm2_h720_seed2021"
+      },
+      "horizon": 720,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ETTm2.csv\" --strategy-args '{\"horizon\": 720}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 720, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.000005, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 4032}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ETTm2\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 5e-06,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ETTm2",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ETTm2.sh#invocation4",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.75,
+      "train_ratio_in_tv_source": "per-dataset",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/Electricity_h96_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/Electricity",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "Electricity_h96",
+      "dataset_file": "Electricity.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 16,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 6,
+          "patience": 2,
+          "seq_len": 2304,
+          "use_variable_chunk": true
+        },
+        "save_path": "repro/Electricity_h96_seed2021"
+      },
+      "horizon": 96,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"Electricity.csv\" --strategy-args '{\"horizon\": 96}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 16, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 96, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.0001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 6, \\\"patience\\\": 2, \\\"seq_len\\\": 2304, \\\"use_variable_chunk\\\": true}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/Electricity\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 16,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 6,
+          "patience": 2,
+          "seq_len": 2304,
+          "use_variable_chunk": true
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/Electricity",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/Electricity.sh#invocation1",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/Electricity_h192_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/Electricity",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "Electricity_h192",
+      "dataset_file": "Electricity.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 16,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 6,
+          "patience": 2,
+          "seq_len": 2304,
+          "use_variable_chunk": true
+        },
+        "save_path": "repro/Electricity_h192_seed2021"
+      },
+      "horizon": 192,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"Electricity.csv\" --strategy-args '{\"horizon\": 192}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 16, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 192, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.0001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 6, \\\"patience\\\": 2, \\\"seq_len\\\": 2304, \\\"use_variable_chunk\\\": true}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/Electricity\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 16,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 6,
+          "patience": 2,
+          "seq_len": 2304,
+          "use_variable_chunk": true
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/Electricity",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/Electricity.sh#invocation2",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/Electricity_h336_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/Electricity",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "Electricity_h336",
+      "dataset_file": "Electricity.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 8,
+          "patience": 2,
+          "seq_len": 2304,
+          "use_variable_chunk": true
+        },
+        "save_path": "repro/Electricity_h336_seed2021"
+      },
+      "horizon": 336,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"Electricity.csv\" --strategy-args '{\"horizon\": 336}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 336, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.0001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 8, \\\"patience\\\": 2, \\\"seq_len\\\": 2304, \\\"use_variable_chunk\\\": true}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/Electricity\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 8,
+          "patience": 2,
+          "seq_len": 2304,
+          "use_variable_chunk": true
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/Electricity",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/Electricity.sh#invocation3",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/Electricity_h720_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/Electricity",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "Electricity_h720",
+      "dataset_file": "Electricity.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 16,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 6,
+          "patience": 2,
+          "seq_len": 2304,
+          "use_variable_chunk": true
+        },
+        "save_path": "repro/Electricity_h720_seed2021"
+      },
+      "horizon": 720,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"Electricity.csv\" --strategy-args '{\"horizon\": 720}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 16, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 720, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.0001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 6, \\\"patience\\\": 2, \\\"seq_len\\\": 2304, \\\"use_variable_chunk\\\": true}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/Electricity\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 16,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 6,
+          "patience": 2,
+          "seq_len": 2304,
+          "use_variable_chunk": true
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/Electricity",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/Electricity.sh#invocation4",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/Weather_h96_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/Weather",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "Weather_h96",
+      "dataset_file": "Weather.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "save_path": "repro/Weather_h96_seed2021"
+      },
+      "horizon": 96,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"Weather.csv\" --strategy-args '{\"horizon\": 96}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 96, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 4032}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/Weather\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/Weather",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/Weather.sh#invocation1",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/Weather_h192_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/Weather",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "Weather_h192",
+      "dataset_file": "Weather.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "save_path": "repro/Weather_h192_seed2021"
+      },
+      "horizon": 192,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"Weather.csv\" --strategy-args '{\"horizon\": 192}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 192, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 4032}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/Weather\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/Weather",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/Weather.sh#invocation2",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/Weather_h336_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/Weather",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "Weather_h336",
+      "dataset_file": "Weather.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "save_path": "repro/Weather_h336_seed2021"
+      },
+      "horizon": 336,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"Weather.csv\" --strategy-args '{\"horizon\": 336}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 336, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 4032}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/Weather\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/Weather",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/Weather.sh#invocation3",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/Weather_h720_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/Weather",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "Weather_h720",
+      "dataset_file": "Weather.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 6e-07,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "save_path": "repro/Weather_h720_seed2021"
+      },
+      "horizon": 720,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"Weather.csv\" --strategy-args '{\"horizon\": 720}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 720, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.0000006, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 4032}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/Weather\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 6e-07,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 4032
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/Weather",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/Weather.sh#invocation4",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/Wind_h96_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/Wind",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "Wind_h96",
+      "dataset_file": "Wind.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/Wind_h96_seed2021"
+      },
+      "horizon": 96,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"Wind.csv\" --strategy-args '{\"horizon\": 96}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 96, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/Wind\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/Wind",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/Wind.sh#invocation1",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/Wind_h192_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/Wind",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "Wind_h192",
+      "dataset_file": "Wind.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 5e-06,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/Wind_h192_seed2021"
+      },
+      "horizon": 192,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"Wind.csv\" --strategy-args '{\"horizon\": 192}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 192, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.000005, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/Wind\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 5e-06,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/Wind",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/Wind.sh#invocation2",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/Wind_h336_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/Wind",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "Wind_h336",
+      "dataset_file": "Wind.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 5e-06,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/Wind_h336_seed2021"
+      },
+      "horizon": 336,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"Wind.csv\" --strategy-args '{\"horizon\": 336}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 336, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.000005, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/Wind\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 5e-06,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/Wind",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/Wind.sh#invocation3",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/Wind_h720_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/Wind",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "Wind_h720",
+      "dataset_file": "Wind.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/Wind_h720_seed2021"
+      },
+      "horizon": 720,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"Wind.csv\" --strategy-args '{\"horizon\": 720}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 720, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/Wind\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/Wind",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/Wind.sh#invocation4",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ZafNoo_h96_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ZafNoo",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ZafNoo_h96",
+      "dataset_file": "ZafNoo.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/ZafNoo_h96_seed2021"
+      },
+      "horizon": 96,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ZafNoo.csv\" --strategy-args '{\"horizon\": 96}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 96, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.0001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ZafNoo\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 96,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ZafNoo",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ZafNoo.sh#invocation1",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ZafNoo_h192_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ZafNoo",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ZafNoo_h192",
+      "dataset_file": "ZafNoo.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/ZafNoo_h192_seed2021"
+      },
+      "horizon": 192,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ZafNoo.csv\" --strategy-args '{\"horizon\": 192}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 192, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ZafNoo\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 192,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ZafNoo",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ZafNoo.sh#invocation2",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ZafNoo_h336_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ZafNoo",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ZafNoo_h336",
+      "dataset_file": "ZafNoo.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/ZafNoo_h336_seed2021"
+      },
+      "horizon": 336,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ZafNoo.csv\" --strategy-args '{\"horizon\": 336}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 336, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.0001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ZafNoo\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 336,
+          "loss": "MSE",
+          "lr": 0.0001,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ZafNoo",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ZafNoo.sh#invocation3",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    },
+    {
+      "adjustments": [
+        {
+          "effective": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "field": "checkpoint_path",
+          "raw": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "reason": "machine-specific pretrained-weight path"
+        },
+        {
+          "effective": "repro/ZafNoo_h720_seed2021",
+          "field": "save_path",
+          "raw": "MUSE/ZafNoo",
+          "reason": "per-run output isolation on this machine"
+        }
+      ],
+      "config_id": "ZafNoo_h720",
+      "dataset_file": "ZafNoo.csv",
+      "eff": {
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/dev_data/wlt/dmmv_rebuild/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "save_path": "repro/ZafNoo_h720_seed2021"
+      },
+      "horizon": 720,
+      "num_rollings": 48000,
+      "raw": {
+        "command": "python ./scripts/run_benchmark.py --config-path \"rolling_forecast_config.json\" --data-name-list \"ZafNoo.csv\" --strategy-args '{\"horizon\": 720}' --model-name \"muse.MUSE\" --model-hyper-params \"{\\\"batch_size\\\": 32, \\\"checkpoint_path\\\": \\\"/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth\\\", \\\"horizon\\\": 720, \\\"loss\\\": \\\"MSE\\\", \\\"lr\\\": 0.00001, \\\"lradj\\\": \\\"type3\\\", \\\"norm\\\": true, \\\"num_epochs\\\": 10, \\\"patience\\\": 2, \\\"seq_len\\\": 2304}\" --deterministic \"full\" --gpus 0 --num-workers 1 --timeout 60000 --save-path \"MUSE/ZafNoo\"",
+        "deterministic": "full",
+        "gpus": "0",
+        "has_num_workers_flag": true,
+        "model_hyper_params": {
+          "batch_size": 32,
+          "checkpoint_path": "/home/vision_cxy/pretrained_weights/mae/mae_visualize_vit_base.pth",
+          "horizon": 720,
+          "loss": "MSE",
+          "lr": 1e-05,
+          "lradj": "type3",
+          "norm": true,
+          "num_epochs": 10,
+          "patience": 2,
+          "seq_len": 2304
+        },
+        "num_workers_flag": "1",
+        "save_path": "MUSE/ZafNoo",
+        "timeout": "60000"
+      },
+      "script_ref": "scripts/multivariate_forecast/muse/ZafNoo.sh#invocation4",
+      "seed": 2021,
+      "stride": 1,
+      "train_ratio_in_tv_resolved": 0.875,
+      "train_ratio_in_tv_source": "__default__",
+      "tv_ratio": 0.8
+    }
+  ],
+  "n_configs": 40,
+  "strategy_config_digest": {
+    "deterministic_cli": "full",
+    "num_rollings": 48000,
+    "seed": 2021,
+    "stride": 1,
+    "train_ratio_in_tv": {
+      "AQShunyi.csv": 0.75,
+      "AQWan.csv": 0.75,
+      "ETTh1.csv": 0.75,
+      "ETTh2.csv": 0.75,
+      "ETTm1.csv": 0.75,
+      "ETTm2.csv": 0.75,
+      "PEMS03.csv": 0.75,
+      "PEMS04.csv": 0.75,
+      "PEMS07.csv": 0.75,
+      "PEMS08.csv": 0.75,
+      "Solar.csv": 0.75,
+      "__default__": 0.875
+    },
+    "tv_ratio": 0.8
+  }
+}
