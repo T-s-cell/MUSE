@@ -6,6 +6,7 @@ import numpy as np
 import torch
 
 from .common import json_safe, write_json
+from .preds_io import save_preds_sharded
 
 
 def clone_full_state(model):
@@ -42,14 +43,10 @@ def save_val_point(out_dir, model_base, step, val_mse, preds=None, targets=None,
         "scaler_scale": model_base.scaler.scale_.tolist(),
     }
     if preds is not None:
-        npz_path = os.path.join(out_dir, f"val_preds_{tag}.npz")
-        np.savez_compressed(
-            npz_path,
-            preds=preds,
-            targets=targets,
-            window_border=window_border,
+        preds_path, _ = save_preds_sharded(
+            out_dir, f"val_preds_{tag}", preds, targets, window_border
         )
-        entry["preds_path"] = npz_path
+        entry["preds_path"] = preds_path
         entry["preds_shape"] = list(preds.shape)
     meta = {
         k: v for k, v in entry.items() if k != "adapter_state"
@@ -88,14 +85,10 @@ def save_best_point(out_dir, check_point, model_base, epoch, step, val_mse,
         "scaler_scale": model_base.scaler.scale_.tolist(),
     }
     if preds is not None:
-        npz_path = os.path.join(out_dir, f"best_preds_{tag}.npz")
-        np.savez_compressed(
-            npz_path,
-            preds=preds,
-            targets=targets,
-            window_border=window_border,
+        preds_path, _ = save_preds_sharded(
+            out_dir, f"best_preds_{tag}", preds, targets, window_border
         )
-        entry["preds_path"] = npz_path
+        entry["preds_path"] = preds_path
         entry["preds_shape"] = list(preds.shape)
         entry["window_border"] = border_meta
     meta = {

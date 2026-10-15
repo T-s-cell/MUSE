@@ -1,15 +1,22 @@
-"""Phase 3 data-protocol probe: adjudicate META length vs CSV length with real code.
+"""Data-protocol probe: adjudicate META length vs CSV length with real code.
 
 Run on the training machine from the repo root:
-    python -m repro_tools.protocol_probe
+    python -m repro_tools.protocol_probe --dataset ETTh2.csv --horizon 96 \
+        --seq-len 1720 [--tv-ratio 0.8 --train-ratio-in-tv 0.75 ...]
 
-Exit codes: 0 = META branch confirmed and all checks passed;
-            2 = protocol mismatch (fallback branch or unexpected META length);
+All dataset-specific values come from the CLI (the orchestrator derives them
+from configs_manifest.json); nothing is hardcoded per dataset. The one
+exception is --expect-meta-len, an OPTIONAL cross-check the caller may pin
+(e.g. ETTh1 14400); without it the probe reports the adjudication only.
+
+Exit codes: 0 = all checks passed;
+            2 = protocol mismatch (fallback branch or failed expectation);
             1 = internal assertion/other failure.
 
 The probe is strictly read-only: CSV/META sha256 must be identical before/after.
 """
 
+import argparse
 import hashlib
 import json
 import os
@@ -27,21 +34,6 @@ from ts_benchmark.common.constant import FORECASTING_DATASET_PATH
 from ts_benchmark.data.data_source import LocalForecastingDataSource
 from ts_benchmark.evaluation.strategy.rolling_forecast import RollingForecast
 from ts_benchmark.utils.data_processing import split_time
-
-RUN = {
-    "series": "ETTh1.csv",
-    "horizon": 96,
-    "stride": 1,
-    "num_rollings": 48000,
-    "tv_ratio": 0.8,
-    "train_ratio_in_tv": 0.75,
-    "seq_len": 1440,
-    "batch_size": 32,
-    "num_workers": 0,
-    "norm": True,
-}
-
-EXPECTED_META_LEN = 14400
 
 
 def sha256_file(path):
@@ -76,8 +68,40 @@ def dump_json(path, obj):
 
 
 def main():
-    out_dir = os.environ.get("MUSE_REPRO_PROBE_OUT", "repro_out/protocol_probe")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dataset", required=True, help="e.g. ETTh2.csv")
+    ap.add_argument("--horizon", type=int, required=True)
+    ap.add_argument("--seq-len", type=int, required=True)
+    ap.add_argument("--batch-size", type=int, default=32)
+    ap.add_argument("--tv-ratio", type=float, default=0.8)
+    ap.add_argument("--train-ratio-in-tv", type=float, default=0.75)
+    ap.add_argument("--stride", type=int, default=1)
+    ap.add_argument("--num-rollings", type=int, default=48000)
+    ap.add_argument("--num-workers", type=int, default=0)
+    ap.add_argument("--expect-meta-len", type=int, default=None,
+                    help="optional pinned META length cross-check")
+    ap.add_argument("--out-dir", default=None)
+    args = ap.parse_args()
+
+    stem = os.path.splitext(args.dataset)[0]
+    out_dir = args.out_dir or os.environ.get(
+        "MUSE_REPRO_PROBE_OUT",
+        f"repro_out/protocol_probe/{stem}_h{args.horizon}",
+    )
     os.makedirs(out_dir, exist_ok=True)
+    RUN = {
+        "series": args.dataset,
+        "horizon": args.horizon,
+        "stride": args.stride,
+        "num_rollings": args.num_rollings,
+        "tv_ratio": args.tv_ratio,
+        "train_ratio_in_tv": args.train_ratio_in_tv,
+        "seq_len": args.seq_len,
+        "batch_size": args.batch_size,
+        "num_workers": args.num_workers,
+        "norm": True,
+    }
+    EXPECTED_META_LEN = args.expect_meta_len
 
     csv_path = os.path.join(FORECASTING_DATASET_PATH, RUN["series"])
     meta_path = os.path.join(FORECASTING_DATASET_PATH, "FORECAST_META.csv")
@@ -158,7 +182,10 @@ def main():
         "expected_meta_length": EXPECTED_META_LEN,
     }
 
-    protocol_ok = data_len_meta == EXPECTED_META_LEN and train_length is not None
+    protocol_ok = (
+        train_length is not None
+        and (EXPECTED_META_LEN is None or data_len_meta == EXPECTED_META_LEN)
+    )
     report["protocol_ok"] = bool(protocol_ok)
 
     # ---- boundaries ----------------------------------------------------
@@ -371,10 +398,12 @@ def main():
 
 
 def write_boundaries_md(out_dir, r):
+    series = r["run_params"]["series"]
     lines = [
-        "# ETTh1 protocol adjudication (probe, real code)",
+        f"# {series} H={r['run_params']['horizon']} protocol adjudication "
+        f"(probe, real code)",
         "",
-        f"- series: {r['run_params']['series']}",
+        f"- series: {series}",
         f"- CSV sha256: `{r['sha256_before']['csv']}`",
         "",
         "## Adjudication",
@@ -388,17 +417,22 @@ def write_boundaries_md(out_dir, r):
         "Note: 长表行数 = 时间步数 × 变量数；本报告区分“时间步数”与“长表行数”。",
         "TFC 长表读回后按列块重组为宽表，时间步数 = CSV 数据行数。",
         "",
-        "## Two-branch numbers",
-        "",
-        "| quantity | META branch (14400) | fallback (17420) |",
-        "|---|---|---|",
-        "| train_valid rows | 11520 | 13936 |",
-        "| train rows | 8640 | 10452 |",
-        "| valid rows | 4320 | 3484 |",
-        "| train windows (drop_last) | 7105 -> 222 batches | 8917 -> 278 batches |",
-        "| valid windows (keep tail) | 2785 -> 88 batches | 3389 -> 106 batches |",
-        "| tail rows outside splits | 3020 | 0 |",
-        "",
+    ]
+    if series == "ETTh1.csv":
+        lines += [
+            "## Two-branch numbers (ETTh1 anchor, frozen from phase 1)",
+            "",
+            "| quantity | META branch (14400) | fallback (17420) |",
+            "|---|---|---|",
+            "| train_valid rows | 11520 | 13936 |",
+            "| train rows | 8640 | 10452 |",
+            "| valid rows | 4320 | 3484 |",
+            "| train windows (drop_last) | 7105 -> 222 batches | 8917 -> 278 batches |",
+            "| valid windows (keep tail) | 2785 -> 88 batches | 3389 -> 106 batches |",
+            "| tail rows outside splits | 3020 | 0 |",
+            "",
+        ]
+    lines += [
         "## Facts",
         "",
     ]
@@ -406,8 +440,9 @@ def write_boundaries_md(out_dir, r):
         lines.append(f"- {k}: {v}")
     lines += [
         "",
-        "Paper anchor: ETTh1 length 14,400 / 6:2:2 (full.md Table 3 & protocol section);",
-        "tv_ratio=0.8 x train_ratio_in_tv=0.75 reproduces 6:2 on the train_valid side.",
+        "Paper anchor: ETT 14,400/57,600 with 6:2:2 and tv_ratio=0.8 × "
+        "train_ratio_in_tv=0.75; other datasets 7:1:2 via __default__ "
+        "train_ratio_in_tv=0.875 (full.md Table 3 & rolling_forecast_config.json).",
         "",
         f"- no_writeback: {r['no_writeback']}",
         f"- dual_scaler_equal: {r.get('dual_scaler', {}).get('equal')}",

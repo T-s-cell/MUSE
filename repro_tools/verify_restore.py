@@ -3,16 +3,22 @@
 Run on the training machine from the repo root:
     python -m repro_tools.verify_restore --out-dir <bundle_dir> [--step N|--best]
 
+Configuration is read from <bundle_dir>/run_config.json (written by the
+orchestrator). The --legacy flag is reserved for the frozen ETTh1/H96
+directory, which predates run manifests; new runs without run_config.json
+are an error.
+
 Checks:
   1. data/ckpt sha256 recomputed and compared (vs --expect-* args when given);
-  2. data pipeline rebuilt with real code; window/batch counts asserted
-     against the recorded train_info;
+  2. data pipeline rebuilt with real code from the SAVED configuration;
+     window/batch counts asserted against the recorded train_info;
   3. scaler vs saved point meta: allclose atol=1e-10;
   4. full state_dict loaded strict=True;
   5. official MUSE.validate re-run on the rebuilt valid loader:
      |recomputed - recorded| <= 1e-6;
-  6. element-wise comparison of re-run predictions/targets vs saved npz,
-     max abs errors reported; targets must match to ~0;
+  6. element-wise comparison of re-run predictions/targets vs saved npz
+     (single or sharded), max abs errors reported; targets must match ~0;
+     window identity asserted against the split formula;
   7. independent float64 MSE recomputation from saved preds/targets vs the
      recorded official value.
 
@@ -38,7 +44,11 @@ from ts_benchmark.data.data_source import LocalForecastingDataSource
 from ts_benchmark.evaluation.strategy.rolling_forecast import RollingForecast
 from ts_benchmark.utils.data_processing import split_time
 
-RUN = {
+from .preds_io import load_preds_any
+from .run_config import load_run_config
+
+# Exact frozen ETTh1/H96 constants (--legacy ONLY; never for new runs).
+LEGACY_RUN = {
     "series": "ETTh1.csv",
     "horizon": 96,
     "tv_ratio": 0.8,
@@ -47,8 +57,7 @@ RUN = {
     "batch_size": 32,
     "num_workers": 0,
 }
-
-HYPER_PARAMS = {
+LEGACY_HYPER_PARAMS = {
     "batch_size": 32,
     "horizon": 96,
     "loss": "MSE",
@@ -74,6 +83,36 @@ def load_json(path):
         return json.load(f)
 
 
+def resolve_run_params(args):
+    cfg = load_run_config(args.out_dir)
+    if cfg is not None:
+        run = {
+            "series": cfg["dataset_file"],
+            "horizon": int(cfg["protocol"]["horizon"]),
+            "tv_ratio": float(cfg["protocol"]["tv_ratio"]),
+            "train_ratio_in_tv": float(cfg["protocol"]["train_ratio_in_tv"]),
+            "seq_len": int(cfg["loader"]["seq_len"]),
+            "batch_size": int(cfg["loader"]["batch_size"]),
+            "num_workers": int(cfg["loader"].get("num_workers", 0)),
+        }
+        hyper = dict(cfg["hyper_params_eff"])
+        return run, hyper, cfg
+    if args.legacy:
+        return dict(LEGACY_RUN), dict(LEGACY_HYPER_PARAMS), None
+    raise SystemExit(
+        f"run_config.json missing in {args.out_dir}; --legacy is reserved "
+        f"for the frozen ETTh1/H96 directory"
+    )
+
+
+def preds_stem(preds_path):
+    base = os.path.basename(preds_path)
+    for suffix in ("_shards.json", ".npz"):
+        if base.endswith(suffix):
+            return base[: -len(suffix)]
+    raise ValueError(f"unrecognised preds path: {preds_path}")
+
+
 def pick_record(manifest, args):
     records = [
         r for r in (manifest.get("val_records", [])
@@ -91,23 +130,23 @@ def pick_record(manifest, args):
     return rec
 
 
-def rebuild_pipeline(hyper_params):
-    csv_path = os.path.join(FORECASTING_DATASET_PATH, RUN["series"])
+def rebuild_pipeline(run, hyper_params):
+    csv_path = os.path.join(FORECASTING_DATASET_PATH, run["series"])
     src = LocalForecastingDataSource()
-    src.load_series_list([RUN["series"]])
-    series = src.dataset.get_series(RUN["series"])
-    meta = src.dataset.get_series_meta_info(RUN["series"])
+    src.load_series_list([run["series"]])
+    series = src.dataset.get_series(run["series"])
+    meta = src.dataset.get_series_meta_info(run["series"])
 
     rf = RollingForecast.__new__(RollingForecast)
-    train_length, _ = rf._get_split_lens(series, meta, RUN["tv_ratio"])
+    train_length, _ = rf._get_split_lens(series, meta, run["tv_ratio"])
     tv_data, _ = split_time(series, train_length)
 
     m = MUSE(**dict(hyper_params))
-    m.config.seq_len = RUN["seq_len"]
+    m.config.seq_len = run["seq_len"]
     MUSE.multi_forecasting_hyper_param_tune(m, tv_data)
 
     train_data, valid_data = train_val_split(
-        tv_data, RUN["train_ratio_in_tv"], RUN["seq_len"]
+        tv_data, run["train_ratio_in_tv"], run["seq_len"]
     )
     scaler = StandardScaler().fit(train_data.values)
     valid_scaled = pd.DataFrame(
@@ -117,17 +156,17 @@ def rebuild_pipeline(hyper_params):
     )
     valid_ds = DatasetForTransformer(
         dataset=valid_scaled,
-        history_len=RUN["seq_len"],
-        prediction_len=RUN["horizon"],
+        history_len=run["seq_len"],
+        prediction_len=run["horizon"],
         label_len=m.config.label_len,
         timeenc=1,
         freq=m.config.freq,
     )
     loader = DataLoader(
         valid_ds,
-        batch_size=RUN["batch_size"],
+        batch_size=run["batch_size"],
         shuffle=False,
-        num_workers=RUN["num_workers"],
+        num_workers=run["num_workers"],
         drop_last=False,
     )
     return {
@@ -182,21 +221,27 @@ def main():
     # flips cudnn flags: deterministic=True, benchmark=False, enabled=False)
     from ts_benchmark.utils.random_utils import fix_all_random_seed
 
-    fix_all_random_seed(int(os.environ.get("MUSE_REPRO_SEED", "2021")))
     ap = argparse.ArgumentParser()
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--step", type=int, default=None)
     ap.add_argument("--best", action="store_true")
+    ap.add_argument("--legacy", action="store_true",
+                    help="frozen ETTh1/H96 dir only (pre-manifest); new runs "
+                         "must carry run_config.json")
     ap.add_argument("--mae-sha", default=None,
                     help="expected sha256 of the MAE checkpoint")
     ap.add_argument("--mae-path", default=None,
                     help="MAE checkpoint path if not recorded in the manifest")
     ap.add_argument("--data-sha", default=None,
-                    help="expected sha256 of ETTh1.csv")
+                    help="expected sha256 of the dataset CSV")
     args = ap.parse_args()
 
     if args.step is None and not args.best:
         args.best = True
+
+    run, hyper_params, run_cfg = resolve_run_params(args)
+    seed = 2021 if run_cfg is None else int(run_cfg["protocol"]["seed"])
+    fix_all_random_seed(seed)
 
     checks = []
     failures = []
@@ -214,11 +259,13 @@ def main():
     report = {
         "out_dir": args.out_dir,
         "record": {k: rec[k] for k in ("tag", "step", "val_mse_fused")},
+        "run_params": run,
+        "legacy": run_cfg is None,
         "checks": checks,
     }
 
     # 1. hashes ----------------------------------------------------------
-    csv_sha = sha256_file(os.path.join(FORECASTING_DATASET_PATH, RUN["series"]))
+    csv_sha = sha256_file(os.path.join(FORECASTING_DATASET_PATH, run["series"]))
     mae_path = manifest.get("mae_ckpt_path") or args.mae_path
     mae_sha = sha256_file(mae_path) if mae_path else None
     check("data_sha_expected",
@@ -229,11 +276,11 @@ def main():
           f"mae={None if mae_sha is None else mae_sha[:16] + '...'}")
     report["hashes"] = {"csv": csv_sha, "mae": mae_sha}
 
-    # 2. pipeline rebuild --------------------------------------------------
-    hyper = dict(HYPER_PARAMS)
+    # 2. pipeline rebuild (from SAVED config) ------------------------------
+    hyper = dict(hyper_params)
     if mae_path:
         hyper["checkpoint_path"] = mae_path
-    pipe = rebuild_pipeline(hyper)
+    pipe = rebuild_pipeline(run, hyper)
     m = pipe["muse_adapter"]
     m._series_dim = pipe["valid_ds"].dataset.shape[-1]
     ti = manifest.get("train_info", {})
@@ -275,13 +322,14 @@ def main():
           f"absdiff={dv:.3e}")
 
     # 6. element-wise predictions ------------------------------------------------
-    saved = np.load(rec["saved"]["preds_path"])
-    wb = saved["window_border"] if "window_border" in saved.files else None
-    if wb is not None and wb.shape[-1] == len(pipe["valid_ds"]):
-        valid_start_abs = len(pipe["train_data"]) - RUN["seq_len"]
+    saved = load_preds_any(args.out_dir, preds_stem(rec["saved"]["preds_path"]))
+    check("preds_coverage", saved["coverage_ok"], saved["coverage_detail"])
+    wb = saved["window_border"]
+    if wb.shape[-1] == len(pipe["valid_ds"]):
+        valid_start_abs = len(pipe["train_data"]) - run["seq_len"]
         expected_border = valid_start_abs + np.arange(
             len(pipe["valid_ds"]), dtype=np.int64
-        ) + RUN["seq_len"]
+        ) + run["seq_len"]
         got = np.asarray(wb, dtype=np.int64)
         check("window_border_matches",
               np.array_equal(got, expected_border),
@@ -289,7 +337,8 @@ def main():
               f"expected_first={int(expected_border[0])}")
     else:
         check("window_border_matches", False,
-              "npz window_border missing or wrong length")
+              f"border length {wb.shape[-1]} != windows "
+              f"{len(pipe['valid_ds'])}")
     preds_re, tgts_re = dump_predictions(m, pipe["valid_loader"])
     err_p = float(np.abs(preds_re - saved["preds"]).max())
     err_t = float(np.abs(tgts_re - saved["targets"]).max())
@@ -299,7 +348,7 @@ def main():
           f"maxerr={err_t:.3e}")
 
     # 7. independent MSE from saved arrays ----------------------------------------
-    horizon = RUN["horizon"]
+    horizon = run["horizon"]
     p = saved["preds"][:, -horizon:, :m._series_dim].astype(np.float64)
     t = saved["targets"][:, -horizon:, :m._series_dim].astype(np.float64)
     mse_ind = float(((p - t) ** 2).sum() / p.size)

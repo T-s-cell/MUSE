@@ -31,6 +31,9 @@ class ReproConfig:
         self.input_hash = os.environ.get("MUSE_REPRO_INPUT_HASH", "") == "1"
         self.warmup_steps = int(os.environ.get("MUSE_REPRO_WARMUP", "10") or 10)
         self.dump_preds = os.environ.get("MUSE_REPRO_DUMP_PREDS", "1") == "1"
+        self.val_max_batches = int(
+            os.environ.get("MUSE_REPRO_VAL_MAX_BATCHES", "0") or 0
+        )
         self.param_sha = os.environ.get("MUSE_REPRO_PARAM_SHA", "") == "1"
         self.force_deterministic = (
             os.environ.get("MUSE_REPRO_FORCE_DETERMINISTIC", "") == "1"

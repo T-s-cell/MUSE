@@ -34,6 +34,7 @@ from .common import (
     trainable_checksum,
     write_json,
 )
+from .preds_io import save_preds_sharded
 from .timing import StepTimer, read_peak_mem, reset_peak_mem, step_stats
 
 
@@ -57,6 +58,8 @@ class ReproHook:
         self.fit_t0 = None
         self.timer = StepTimer()
         self.cur_batch = None
+        self.run_config = None
+        self.warmup_peak = None
         self._last_train_batch = None
         self.model_base = None
         self.optimizer = None
@@ -122,14 +125,35 @@ class ReproHook:
         self.criterion = criterion
 
     def on_fit_start(self, model_base):
+        if self.model_base is not None:
+            raise RuntimeError(
+                "repro hook already bound to a previous fit in this process; "
+                "one process must run exactly one configuration"
+            )
         self.model_base = model_base
         if self.cfg.force_deterministic:
             # comparison-runs only: not part of the official perf configuration
             torch.use_deterministic_algorithms(True)
+        rc_path = os.path.join(self.cfg.out_dir, "run_config.json")
+        self.run_config = None
+        if os.path.exists(rc_path):
+            import json
+
+            with open(rc_path) as f:
+                self.run_config = json.load(f)
+        elif os.environ.get("MUSE_REPRO_REQUIRE_RUN_CONFIG", "") == "1":
+            raise RuntimeError(
+                f"run_config.json missing in {self.cfg.out_dir}; new runs must "
+                f"be launched with a written run configuration"
+            )
         core = model_base._core_model()
         self.fingerprint = module_fingerprint(core.vision_model)
         self.fit_t0 = time.perf_counter()
         write_json(os.path.join(self.cfg.out_dir, "env_snapshot.json"), {
+            "run_config_identity": None if self.run_config is None else {
+                k: self.run_config.get(k)
+                for k in ("run_id", "kind", "dataset_file", "protocol", "loader")
+            },
             "torch": torch.__version__,
             "cuda": torch.version.cuda,
             "cudnn_version": torch.backends.cudnn.version(),
@@ -189,6 +213,10 @@ class ReproHook:
         step = self.global_step
         self.cur_epoch = epoch
         cuda_ms, wall_ms = self.timer.end()
+
+        if step == self.cfg.warmup_steps and self.warmup_peak is None:
+            # early memory feasibility signal (MiB), read WITHOUT resetting
+            self.warmup_peak = read_peak_mem()
 
         loss_t, addl_t = self.loss_cache
         total = float((loss_t + addl_t).detach().item())
@@ -414,9 +442,8 @@ class ReproHook:
         preds = np.asarray(all_predicts)
         tgts = np.asarray(targets)
         borders = np.asarray(index_list, dtype=np.int64)
-        npz_path = os.path.join(self.cfg.out_dir, "test_preds.npz")
-        np.savez_compressed(
-            npz_path, preds=preds, targets=tgts, window_border=borders
+        preds_path, shard_index = save_preds_sharded(
+            self.cfg.out_dir, "test_preds", preds, tgts, borders
         )
         dump_elapsed = time.perf_counter() - t0
         eval_scaler_stats = None
@@ -431,7 +458,8 @@ class ReproHook:
             "n_windows": int(len(borders)),
             "window_border_first": int(borders[0]),
             "window_border_last": int(borders[-1]),
-            "preds_path": npz_path,
+            "preds_path": preds_path,
+            "preds_sharded": shard_index is not None,
             "eval_scaler": eval_scaler_stats,
             "mean_metrics": list(mean_metrics),
             "official_total_inference_s": float(total_inference_time),
@@ -446,6 +474,10 @@ class ReproHook:
         loader = self.valid_loader
         sd = self.series_dim
         if loader is None:
+            return
+
+        if self.cfg.val_max_batches > 0:
+            self._run_val_capped(model_base)
             return
 
         reset_peak_mem()
@@ -500,6 +532,116 @@ class ReproHook:
         self.val_records.append(rec)
         self._write_val_csv()
 
+    def _run_val_capped(self, model_base):
+        """Preflight capped validation through the VAL_AT entry point.
+
+        Times at most val_max_batches batches (the last slot reserved for the
+        TRUE tail batch rebuilt with the official batch composition), mirroring
+        MUSE.validate's fused double accumulation. The partial value NEVER
+        feeds early stopping or best selection: self.best is untouched, the
+        extra full prediction dump and the val-point bundle are skipped, and
+        every record is flagged partial=True.
+        """
+        from torch.utils.data import DataLoader, Subset
+
+        loader = self.valid_loader
+        sd = self.series_dim
+        config = model_base.config
+        horizon = config.horizon
+        device = next(model_base.model.parameters()).device
+        cap = self.cfg.val_max_batches
+        n_full = len(loader)
+
+        reset_peak_mem()
+        rng = save_rng()
+        t0 = time.perf_counter()
+        model_base.model.eval()
+        square_sum = 0.0
+        value_count = 0
+        batch_ms = []
+        tail_info = None
+
+        def _one_batch(input, target):
+            nonlocal square_sum, value_count
+            tb = time.perf_counter()
+            input, target = input.to(device), target.to(device)
+            output = model_base.model(
+                input,
+                fp64=config.fp64,
+                use_variable_chunk=config.use_variable_chunk,
+            )
+            target = target[:, -horizon:, :sd]
+            output = output[:, -horizon:, :sd]
+            output, target = model_base._post_process(output, target)
+            err = (output - target).double()
+            square_sum += err.square().sum().item()
+            value_count += err.numel()
+            batch_ms.append((time.perf_counter() - tb) * 1000.0)
+
+        with torch.no_grad():
+            if n_full <= cap:
+                for input, target, input_mark, target_mark in loader:
+                    _one_batch(input, target)
+            else:
+                for bi, (input, target, input_mark, target_mark) in enumerate(
+                    loader
+                ):
+                    if bi >= cap - 1:
+                        break
+                    _one_batch(input, target)
+                n_ds = len(loader.dataset)
+                bs = loader.batch_size
+                tail_n = n_ds % bs if n_ds % bs else bs
+                tail_ds = Subset(
+                    loader.dataset, list(range(n_ds - tail_n, n_ds))
+                )
+                tail_loader = DataLoader(
+                    tail_ds,
+                    batch_size=tail_n,
+                    shuffle=False,
+                    num_workers=config.num_workers,
+                    drop_last=False,
+                )
+                for input, target, input_mark, target_mark in tail_loader:
+                    _one_batch(input, target)
+                    tail_info = {
+                        "n_samples": int(input.shape[0]),
+                        "official_tail_n": int(tail_n),
+                        "input_shape": list(input.shape),
+                        "finite": bool(
+                            torch.isfinite(input).all()
+                            and torch.isfinite(target).all()
+                            and torch.isfinite(output).all()
+                        ),
+                    }
+        elapsed = time.perf_counter() - t0
+        restore_rng(rng)
+        model_base.model.train()
+        mem = read_peak_mem()
+        val_partial = square_sum / value_count
+        ms_sorted = sorted(batch_ms)
+        rec = {
+            "tag": f"step{self.global_step}",
+            "step": self.global_step,
+            "val_mse_fused": float(val_partial),
+            "elapsed_s": elapsed,
+            "rng_guarded": True,
+            "val_capped": True,
+            "partial": True,
+            "feeds_early_stop": False,
+            "n_batches_full": n_full,
+            "batches_timed": len(batch_ms),
+            "batch_ms_mean": sum(batch_ms) / len(batch_ms),
+            "batch_ms_median": ms_sorted[len(ms_sorted) // 2],
+            "batch_ms_p95": ms_sorted[max(0, int(np.ceil(0.95 * len(ms_sorted))) - 1)],
+            "tail_batch": tail_info,
+            "dump_skipped": True,
+            "save_full_skipped": True,
+            **mem,
+        }
+        self.val_records.append(rec)
+        self._write_val_csv()
+
     def _dump_val_predictions(self, model_base, loader, sd):
         """Verification-only pass mirroring MUSE.validate to collect outputs.
 
@@ -544,6 +686,8 @@ class ReproHook:
             "train_peak_alloc_mb", "train_peak_reserved_mb",
             "peak_alloc_mb", "peak_reserved_mb", "current_alloc_mb",
             "dump_elapsed_s", "save_elapsed_s",
+            "val_capped", "partial", "n_batches_full", "batches_timed",
+            "batch_ms_mean", "batch_ms_median", "batch_ms_p95",
         ]
         with open(path, "w", newline="") as f:
             writer = csv.writer(f)
@@ -603,6 +747,7 @@ class ReproHook:
             "global_step": self.global_step,
             "stop_reason": "max_steps" if self.stop else "natural_end",
             "fit_wall_s": elapsed_fit,
+            "peak_after_warmup": self.warmup_peak,
             "frozen_fingerprint": fp_report,
             "train_info": self.train_info,
             "timing": stats,
@@ -646,6 +791,10 @@ class ReproHook:
     def _write_manifest(self):
         manifest = {
             "out_dir": self.cfg.out_dir,
+            "run_config_identity": None if self.run_config is None else {
+                k: self.run_config.get(k)
+                for k in ("run_id", "kind", "dataset_file", "protocol", "loader")
+            },
             "global_step": self.global_step,
             "cur_epoch": self.cur_epoch,
             "best": self.best,
