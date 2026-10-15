@@ -49,7 +49,7 @@ def find_source(source_root, name):
     for dirpath, _dirnames, filenames in os.walk(source_root):
         if name in filenames:
             hits.append(os.path.join(dirpath, name))
-    return hits
+    return sorted(hits)
 
 
 def read_meta(dst_dir):
@@ -64,6 +64,9 @@ def read_meta(dst_dir):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-root", default="/dev_data/wlt/Aurora/benchmark_datasets")
+    ap.add_argument("--prefer-substr", default="TSFM-Bench",
+                    help="when several same-name files exist, prefer the "
+                         "unique candidate whose path contains this")
     ap.add_argument("--dst-dir",
                     default="/dev_data/wlt/MUSE/dataset/forecasting")
     ap.add_argument("--datasets", nargs="*", default=sorted(EXPECTED_META_LEN))
@@ -79,6 +82,15 @@ def main():
         report["files"][name] = entry
 
         hits = find_source(args.source_root, name)
+        entry["source_candidates"] = hits
+        if len(hits) > 1:
+            narrowed = [h for h in hits if args.prefer_substr in h]
+            if len(narrowed) == 1:
+                entry["disambiguation"] = (
+                    f"multiple candidates; preferred by --prefer-substr "
+                    f"{args.prefer_substr!r}"
+                )
+                hits = narrowed
         if len(hits) != 1:
             entry["error"] = f"source matches: {hits}"
             report["problems"].append(f"{name}: source lookup failed")
