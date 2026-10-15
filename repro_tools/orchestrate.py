@@ -137,6 +137,9 @@ def env_overrides_for(kind, args):
         ov["MUSE_REPRO_VAL_MAX_BATCHES"] = str(args.preflight_val_batches)
     elif kind == "controlled_stop":
         ov["MUSE_REPRO_MAX_STEPS"] = str(args.stop_steps)
+    for kv in args.env or []:
+        k, _, v = kv.partition("=")
+        ov[k] = v
     return ov
 
 
@@ -419,6 +422,8 @@ def main():
     ap.add_argument("--status", action="store_true")
     ap.add_argument("--allow-shared-gpu", action="store_true",
                     help="warn instead of fail when compute processes exist")
+    ap.add_argument("--env", nargs="*", default=None,
+                    help="extra KEY=VALUE env overrides for the child")
     args = ap.parse_args()
     queue_dir = args.queue_dir or os.path.join(args.logs_root, "orchestration")
     os.makedirs(queue_dir, exist_ok=True)
