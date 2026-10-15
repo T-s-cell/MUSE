@@ -391,21 +391,22 @@ def main():
         raise SystemExit("configs_manifest.json has check_problems; refusing")
 
     queue = load_queue(queue_path)
-    known = {(e["run_id"], e["attempt"]) for e in queue["entries"]}
     selected = []
-    for cfg in manifest["configs"]:
-        cid = cfg["config_id"]
-        if cid == "ETTh1_h96" and not args.include_etth1_h96:
-            continue
-        if args.filter and args.filter not in cid:
-            continue
-        if args.only and cid not in args.only:
-            continue
-        e = make_entry(cfg, args.kind, args, args.logs_root)
-        if (e["run_id"], e["attempt"]) not in known:
-            queue["entries"].append(e)
-        selected.append(e["run_id"])
-    save_queue(queue_path, queue)
+    if not (args.status or args.recover_only):
+        known = {(e["run_id"], e["attempt"]) for e in queue["entries"]}
+        for cfg in manifest["configs"]:
+            cid = cfg["config_id"]
+            if cid == "ETTh1_h96" and not args.include_etth1_h96:
+                continue
+            if args.filter and args.filter not in cid:
+                continue
+            if args.only and cid not in args.only:
+                continue
+            e = make_entry(cfg, args.kind, args, args.logs_root)
+            if (e["run_id"], e["attempt"]) not in known:
+                queue["entries"].append(e)
+            selected.append(e["run_id"])
+        save_queue(queue_path, queue)
 
     changed = recover_stale(queue, args.dry_run)
     if changed:
