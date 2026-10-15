@@ -177,8 +177,14 @@ def make_optimizer(adapter, lr):
     ])
 
 
-def compare_update(adp_u, adp_c, before, gu, gc, atol, rtol, grad_diff):
-    """Compare the Adam update deltas of one step.
+def compare_update(adp_u, adp_c, before_u, before_c, gu, gc, atol, rtol,
+                   grad_diff):
+    """Compare the Adam update deltas of one step (per-branch befores).
+
+    Each branch's delta is measured against ITS OWN pre-step state, so a
+    parameter difference inherited from earlier exempted noise-floor
+    elements does not contaminate this step's comparison; that inherited
+    drift is recorded separately per parameter (param_state_absdiff).
 
     Adam's m/(sqrt(v)+eps) normalization ill-conditions elements whose
     gradient is near zero: a grad difference far below the demonstrated
@@ -197,12 +203,15 @@ def compare_update(adp_u, adp_c, before, gu, gc, atol, rtol, grad_diff):
     for n, p in adp_c.model.named_parameters():
         if not p.requires_grad:
             continue
-        d_c = p.detach() - before[n]
-        d_u = params_u[n].detach() - before[n]
+        d_c = p.detach() - before_c[n]
+        d_u = params_u[n].detach() - before_u[n]
         diff = (d_c - d_u).abs()
         entry = {"max_abs": float(diff.max()), "n_elem": int(diff.numel())}
         fail = diff > (atol + rtol * d_u.abs())
         entry["n_fail"] = int(fail.sum())
+        drift = float((p.detach() - params_u[n].detach()).abs().max())
+        if drift:
+            entry["param_state_absdiff"] = drift
         if entry["n_fail"]:
             g_u, g_c = gu[n], gc[n]
             bound = 10.0 * grad_diff.get(n, 0.0)
@@ -331,9 +340,12 @@ def main():
 
     # ---- update iterations ----------------------------------------------
     for k in range(1, args.updates + 1):
-        before = {n: p.detach().clone()
-                  for n, p in adp_u.model.named_parameters()
-                  if p.requires_grad}
+        before_u = {n: p.detach().clone()
+                    for n, p in adp_u.model.named_parameters()
+                    if p.requires_grad}
+        before_c = {n: p.detach().clone()
+                    for n, p in adp_c.model.named_parameters()
+                    if p.requires_grad}
         opt_u.step()
         opt_c.step()
         grad_diff = {
@@ -342,7 +354,8 @@ def main():
             if isinstance(v, dict) and "max_abs" in v
         }
         upd_cmp, upd_ok = compare_update(
-            adp_u, adp_c, before, gu, gc, args.atol, args.rtol, grad_diff
+            adp_u, adp_c, before_u, before_c, gu, gc,
+            args.atol, args.rtol, grad_diff
         )
         pu = fwd_predictions(adp_u, input, args.num_vars, "full")
         pc = fwd_predictions(adp_c, input, args.num_vars, "chunks")
