@@ -197,6 +197,30 @@ def check_controlled_stop(out_dir):
     return True, f"max_steps stop at step {s.get('global_step')}"
 
 
+def check_preflight(out_dir):
+    """Probe criteria: stopped at cap, losses finite, frozen tower intact,
+    never entered test, capped validation flagged partial/non-intrusive."""
+    ok, detail = check_controlled_stop(out_dir)
+    if not ok:
+        return False, detail
+    with open(os.path.join(out_dir, "summary.json")) as f:
+        s = json.load(f)
+    if s.get("finite_losses") is not True:
+        return False, "finite_losses is not True"
+    fp = s.get("frozen_fingerprint") or {}
+    if any(fp.get(k) for k in ("added", "changed", "missing")):
+        return False, "frozen fingerprint changed"
+    capped = [v for v in s.get("val_records") or [] if v.get("val_capped")]
+    if capped:
+        v = capped[-1]
+        if v.get("partial") is not True or v.get("feeds_early_stop") is not False:
+            return False, "capped val not flagged partial/non-intrusive"
+        tail = v.get("tail_batch")
+        if tail is not None and tail.get("finite") is not True:
+            return False, f"tail batch not finite: {tail}"
+    return True, f"probe stopped at step {s.get('global_step')} (cap respected)"
+
+
 def recover_stale(queue, dry):
     """Mark dead running entries failed(interrupted) or re-queue postverify."""
     changed = []
@@ -362,6 +386,18 @@ def postverify_entry(entry, args, queue_path, queue):
         print(f"[orch] {'DONE' if ok else 'FAIL'} {entry['run_id']}: {detail}")
         if not ok:
             write_failure(out_dir, entry, "controlled_stop", detail)
+        return ok
+
+    if entry["kind"] == "preflight":
+        # Probes never enter the test phase by design -> no verify_restore /
+        # recompute (both require test-phase artifacts that must NOT exist).
+        ok, detail = check_preflight(out_dir)
+        entry["status"] = "done_preflight" if ok else "failed"
+        entry["finished_at"] = now()
+        entry["note"] = detail
+        print(f"[orch] {'DONE' if ok else 'FAIL'} {entry['run_id']}: {detail}")
+        if not ok:
+            write_failure(out_dir, entry, "preflight", detail)
         return ok
 
     steps = [
