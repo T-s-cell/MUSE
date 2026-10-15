@@ -177,6 +177,52 @@ def make_optimizer(adapter, lr):
     ])
 
 
+def compare_update(adp_u, adp_c, before, gu, gc, atol, rtol):
+    """Compare the Adam update deltas of one step.
+
+    Adam's m/(sqrt(v)+eps) normalization ill-conditions elements whose
+    gradient is near zero (|g| ~ eps): there a grad difference far below
+    the agreed tolerance maps to a delta difference ABOVE the fixed atol.
+    Failing elements are exempt ONLY when both sides' gradients there are
+    <= max(1e-6 * max|g_u|, 1e-9); every exemption is recorded.
+    """
+    per_param = {}
+    all_ok = True
+    params_u = dict(adp_u.model.named_parameters())
+    for n, p in adp_c.model.named_parameters():
+        if not p.requires_grad:
+            continue
+        d_c = p.detach() - before[n]
+        d_u = params_u[n].detach() - before[n]
+        diff = (d_c - d_u).abs()
+        entry = {"max_abs": float(diff.max()), "n_elem": int(diff.numel())}
+        fail = diff > (atol + rtol * d_u.abs())
+        entry["n_fail"] = int(fail.sum())
+        if entry["n_fail"]:
+            g_u, g_c = gu[n], gc[n]
+            gmax = float(g_u.abs().max())
+            tiny = max(1e-6 * gmax, 1e-9)
+            gu_f = g_u.abs()[fail]
+            gc_f = g_c.abs()[fail]
+            exempt = bool((gu_f <= tiny).all() and (gc_f <= tiny).all())
+            k = int((diff * fail).argmax())
+            entry.update({
+                "failing_grad_max": float(max(gu_f.max(), gc_f.max())),
+                "grad_ref_max": gmax,
+                "grad_tiny_threshold": tiny,
+                "tiny_grad_exempt": exempt,
+                "worst": {
+                    "delta_absdiff": float(diff.flatten()[k]),
+                    "grad_u": float(g_u.flatten()[k]),
+                    "grad_c": float(g_c.flatten()[k]),
+                },
+            })
+            if not exempt:
+                all_ok = False
+        per_param[n] = entry
+    return per_param, all_ok
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mae-path", required=True)
@@ -278,23 +324,14 @@ def main():
 
     # ---- update iterations ----------------------------------------------
     for k in range(1, args.updates + 1):
-        before_u = {n: p.detach().clone()
-                    for n, p in adp_u.model.named_parameters()
-                    if p.requires_grad}
+        before = {n: p.detach().clone()
+                  for n, p in adp_u.model.named_parameters()
+                  if p.requires_grad}
         opt_u.step()
         opt_c.step()
-        upd_cmp = {}
-        upd_ok = True
-        for n, p in adp_c.model.named_parameters():
-            if not p.requires_grad:
-                continue
-            d_c = p.detach() - before_u[n]
-            d_u = adp_u.model.state_dict()[n].to(device) - before_u[n]
-            if d_c.abs().max() == 0 and d_u.abs().max() == 0:
-                continue
-            c = jcmp(d_c, d_u, args.atol, args.rtol)
-            upd_cmp[n] = c
-            upd_ok = upd_ok and c["ok"]
+        upd_cmp, upd_ok = compare_update(
+            adp_u, adp_c, before, gu, gc, args.atol, args.rtol
+        )
         pu = fwd_predictions(adp_u, input, args.num_vars, "full")
         pc = fwd_predictions(adp_c, input, args.num_vars, "chunks")
         pred_cmp = {
@@ -312,6 +349,10 @@ def main():
                                  if isinstance(v, dict) and "max_abs" in v),
             "grads_all_ok": grad_ok,
             "update_all_ok": upd_ok,
+            "update_exempt_params": sorted(
+                n for n, v in upd_cmp.items()
+                if v.get("n_fail") and v.get("tiny_grad_exempt")
+            ),
             "checksum_u": checksum(adp_u), "checksum_c": checksum(adp_c),
         })
         it["grads"] = grad_cmp
