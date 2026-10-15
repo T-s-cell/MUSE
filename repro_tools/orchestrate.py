@@ -135,11 +135,14 @@ def env_overrides_for(kind, args):
         ov["MUSE_REPRO_MAX_STEPS"] = str(args.preflight_steps)
         ov["MUSE_REPRO_VAL_AT"] = str(args.preflight_steps)
         ov["MUSE_REPRO_VAL_MAX_BATCHES"] = str(args.preflight_val_batches)
+    elif kind == "controlled_stop":
+        ov["MUSE_REPRO_MAX_STEPS"] = str(args.stop_steps)
     return ov
 
 
 def make_entry(cfg, kind, args, logs_root):
-    run_id = cfg["config_id"] + "_seed2021" + ("_probe" if kind == "preflight" else "")
+    suffix = {"preflight": "_probe", "controlled_stop": "_g3"}.get(kind, "")
+    run_id = cfg["config_id"] + "_seed2021" + suffix
     return {
         "run_id": run_id,
         "config_id": cfg["config_id"],
@@ -172,6 +175,23 @@ def check_natural_completion(out_dir):
     if "max_steps" in reason or "interrupt" in reason:
         return False, f"summary stop_reason={reason!r}"
     return True, f"stop_reason={reason!r}"
+
+
+def check_controlled_stop(out_dir):
+    """G3 criteria: summary says max_steps, no test entry, no test_preds."""
+    summary_path = os.path.join(out_dir, "summary.json")
+    if not os.path.exists(summary_path):
+        return False, "summary.json missing"
+    with open(summary_path) as f:
+        s = json.load(f)
+    if s.get("stop_reason") != "max_steps":
+        return False, f"stop_reason={s.get('stop_reason')!r} != max_steps"
+    if os.path.exists(os.path.join(out_dir, "test_report.json")):
+        return False, "test_report.json exists (reached test phase)"
+    for name in ("test_preds.npz", "test_preds_shards.json"):
+        if os.path.exists(os.path.join(out_dir, name)):
+            return False, f"{name} exists"
+    return True, f"max_steps stop at step {s.get('global_step')}"
 
 
 def recover_stale(queue, dry):
@@ -312,6 +332,11 @@ def run_entry(entry, cfg, args, queue_path, queue):
             write_failure(out_dir, entry, "launch", "keyboard-interrupt; child terminated", log_path)
             return False
     if rc != 0:
+        if entry["kind"] == "controlled_stop":
+            # SystemExit from the controlled stop is the EXPECTED outcome;
+            # postverify checks the real criteria (stop_reason, no test).
+            print(f"[orch] controlled stop exit {rc} (expected)")
+            return True
         entry["status"] = "failed"
         entry["finished_at"] = now()
         entry["note"] = f"training exit code {rc}"
@@ -325,6 +350,17 @@ def postverify_entry(entry, args, queue_path, queue):
     entry["status"] = "postverify"
     save_queue(queue_path, queue)
     out_dir = entry["out_dir"]
+
+    if entry["kind"] == "controlled_stop":
+        ok, detail = check_controlled_stop(out_dir)
+        entry["status"] = "done_preflight" if ok else "failed"
+        entry["finished_at"] = now()
+        entry["note"] = detail
+        print(f"[orch] {'DONE' if ok else 'FAIL'} {entry['run_id']}: {detail}")
+        if not ok:
+            write_failure(out_dir, entry, "controlled_stop", detail)
+        return ok
+
     steps = [
         ["verify_restore", [args.python, "-m", "repro_tools.verify_restore",
                             "--out-dir", out_dir]
@@ -369,8 +405,11 @@ def main():
                     help="default <logs-root>/orchestration")
     ap.add_argument("--filter", default=None, help="substring on config_id")
     ap.add_argument("--only", nargs="*", default=None)
-    ap.add_argument("--kind", choices=("formal", "preflight"), default="formal")
+    ap.add_argument("--kind", choices=("formal", "preflight", "controlled_stop"),
+                    default="formal")
     ap.add_argument("--audit-steps", default=1)
+    ap.add_argument("--stop-steps", default=2,
+                    help="MAX_STEPS for --kind controlled_stop")
     ap.add_argument("--preflight-steps", default=50)
     ap.add_argument("--preflight-val-batches", default=20)
     ap.add_argument("--include-etth1-h96", action="store_true")

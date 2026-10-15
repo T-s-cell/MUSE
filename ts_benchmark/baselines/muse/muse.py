@@ -205,6 +205,7 @@ class MUSE(DeepForecastingModelBase):
         )
         correction = context["correction"]
         correction_leaf = correction.detach().requires_grad_(True)
+        loss_acc = None
         for start in range(
             0, context["num_variables"], model.variable_chunk_size
         ):
@@ -244,10 +245,11 @@ class MUSE(DeepForecastingModelBase):
             gate_prediction = (
                 gate * channel.detach() + (1 - gate) * tp.detach()
             )
+            channel_loss = criterion(channel, processed_target)
+            tp_loss = criterion(tp, processed_target)
+            gate_loss = criterion(gate_prediction, processed_target)
             weighted_loss = (
-                criterion(channel, processed_target)
-                + criterion(tp, processed_target)
-                + criterion(gate_prediction, processed_target)
+                channel_loss + tp_loss + gate_loss
             ) * (
                 supervised_width / series_dim
             )
@@ -256,8 +258,32 @@ class MUSE(DeepForecastingModelBase):
             else:
                 scaler.scale(weighted_loss).backward()
 
+            # detached loss bookkeeping only (no second backward)
+            weight = supervised_width / series_dim
+            parts = (
+                channel_loss.detach() * weight,
+                tp_loss.detach() * weight,
+                gate_loss.detach() * weight,
+                weighted_loss.detach(),
+            )
+            if loss_acc is None:
+                loss_acc = list(parts)
+            else:
+                for k in range(4):
+                    loss_acc[k] = loss_acc[k] + parts[k]
+
         if correction_leaf.grad is not None and correction.requires_grad:
             correction.backward(correction_leaf.grad)
+
+        if loss_acc is None:
+            return None
+        return {
+            "channel": loss_acc[0],
+            "tp": loss_acc[1],
+            "gate": loss_acc[2],
+            "total": loss_acc[3],
+            "gate_value": torch.sigmoid(model.fusion_logit).detach(),
+        }
 
     def _forecast_fit_variable_chunks(
         self,
@@ -283,6 +309,7 @@ class MUSE(DeepForecastingModelBase):
             self.multi_forecasting_hyper_param_tune(train_valid_data)
 
         self.model = self._init_model()
+        hook = _repro_get_hook() if _repro_get_hook is not None else None
         print(
             "----------------------------------------------------------",
             self.model_name,
@@ -316,7 +343,7 @@ class MUSE(DeepForecastingModelBase):
                 drop_last=False,
             )
 
-        _, self.train_data_loader = forecasting_data_provider(
+        train_dataset, self.train_data_loader = forecasting_data_provider(
             train_data,
             config,
             timeenc=1,
@@ -324,13 +351,29 @@ class MUSE(DeepForecastingModelBase):
             shuffle=True,
             drop_last=train_drop_last,
         )
+
+        if hook is not None:
+            hook.on_data_ready(
+                self,
+                train_dataset,
+                self.train_data_loader,
+                valid_data_loader if train_ratio_in_tv != 1 else None,
+                series_dim,
+            )
+
         criterion, optimizer = self._init_criterion_and_optimizer()
         grad_scaler = (
             torch.cuda.amp.GradScaler() if config.use_amp == 1 else None
         )
         device = get_device()
+
+        if hook is not None:
+            hook.on_train_ready(self, optimizer, criterion)
+
         self.early_stopping = self._init_early_stopping()
         self.model.to(device)
+        if hook is not None:
+            hook.on_fit_start(self)
         total_params = sum(
             parameter.numel()
             for parameter in self.model.parameters()
@@ -340,7 +383,10 @@ class MUSE(DeepForecastingModelBase):
 
         for epoch in range(config.num_epochs):
             self.model.train()
-            for input, target, input_mark, target_mark in self.train_data_loader:
+            repro_stop = False
+            for i, (input, target, input_mark, target_mark) in enumerate(
+                self.train_data_loader
+            ):
                 optimizer.zero_grad()
                 input, target, input_mark, target_mark = (
                     input.to(device),
@@ -348,7 +394,9 @@ class MUSE(DeepForecastingModelBase):
                     input_mark.to(device),
                     target_mark.to(device),
                 )
-                self._backward_variable_chunks(
+                if hook is not None:
+                    hook.on_step_begin(self, input, target, input_mark, target_mark)
+                chunk_losses = self._backward_variable_chunks(
                     input,
                     target,
                     series_dim,
@@ -361,21 +409,48 @@ class MUSE(DeepForecastingModelBase):
                     grad_scaler.step(optimizer)
                     grad_scaler.update()
 
+                if hook is not None and chunk_losses is not None:
+                    hook.on_loss(self, chunk_losses["total"], 0.0)
+                    hook.note_loss_components(
+                        chunk_losses["channel"],
+                        chunk_losses["tp"],
+                        chunk_losses["gate"],
+                        chunk_losses["gate_value"],
+                        shapes={"variable_chunked": True},
+                    )
+
+                if hook is not None and hook.on_step_end(self, optimizer, epoch, i):
+                    repro_stop = True
+                    break
+
                 if config.lradj == "TST":
                     self._adjust_lr(optimizer, epoch + 1, config)
 
+            if repro_stop:
+                break
+
             if train_ratio_in_tv != 1:
-                valid_loss = self.validate(
-                    valid_data_loader, series_dim, criterion
-                )
+                if hook is not None:
+                    valid_loss = hook.timed_validate(
+                        self, valid_data_loader, series_dim, criterion
+                    )
+                else:
+                    valid_loss = self.validate(
+                        valid_data_loader, series_dim, criterion
+                    )
                 improved = self.early_stopping(valid_loss, self.model)
                 if improved:
                     self.check_point = self.save_checkpoint(self.model)
+                    if hook is not None:
+                        hook.on_best(self, valid_loss)
                 if self.early_stopping.early_stop:
                     break
 
             if config.lradj != "TST":
                 self._adjust_lr(optimizer, epoch + 1, config)
+
+        if hook is not None:
+            hook.on_fit_end(self)
 
     def _core_model(self):
         return getattr(self.model, "module", self.model)
