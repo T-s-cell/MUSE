@@ -38,6 +38,18 @@ from .preds_io import save_preds_sharded
 from .timing import StepTimer, read_peak_mem, reset_peak_mem, step_stats
 
 
+def _official_metric_names():
+    """Canonical RollingForecast evaluator metric order (regression_metrics
+    __all__); recorded so downstream tools never re-derive positions."""
+    try:
+        from ts_benchmark.evaluation.metrics.regression_metrics import (
+            __all__ as metric_all,
+        )
+        return list(metric_all)
+    except ImportError:
+        return None
+
+
 class ReproHook:
     def __init__(self, cfg):
         self.cfg = cfg
@@ -462,6 +474,7 @@ class ReproHook:
             "preds_sharded": shard_index is not None,
             "eval_scaler": eval_scaler_stats,
             "mean_metrics": list(mean_metrics),
+            "metric_names": _official_metric_names(),
             "official_total_inference_s": float(total_inference_time),
             "official_fit_s": float(fit_time),
             "dump_elapsed_s": dump_elapsed,

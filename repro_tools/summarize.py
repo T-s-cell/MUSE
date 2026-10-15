@@ -179,9 +179,14 @@ def rollup_run(run_id, status, attempt, out_dir):
             }
     if tr:
         mm = tr.get("mean_metrics") or []
-        r["mse_official"] = mm[0] if len(mm) > 0 else None
-        r["mae_official"] = mm[1] if len(mm) > 1 else None
-        r["rmse_official"] = mm[2] if len(mm) > 2 else None
+        # canonical-16 layout: [mae,mse,rmse,...,mae_norm,mse_norm,rmse_norm,...]
+        # paper metrics are the *_norm entries; legacy-3 is [mse, mae, rmse].
+        if len(mm) == 16:
+            r["mse_official"], r["mae_official"] = mm[9], mm[8]
+            r["rmse_official"] = mm[10]
+        elif len(mm) == 3:
+            r["mse_official"], r["mae_official"] = mm[0], mm[1]
+            r["rmse_official"] = mm[2]
         r["n_test_windows"] = tr.get("n_windows")
         r["preds_shape"] = tr.get("preds_shape")
         r["official_fit_s"] = tr.get("official_fit_s")
@@ -192,6 +197,9 @@ def rollup_run(run_id, status, attempt, out_dir):
         r["recompute_absdiff"] = rec.get("absdiff")
         r["recompute_pass"] = rec.get("pass")
         r["coverage_ok"] = rec.get("coverage_ok")
+        if rec.get("mse_official") is not None:
+            r["mse_official"] = rec.get("mse_official")
+            r["mae_official"] = rec.get("mae_official")
     vok, npass, ntot = verify_ok(out_dir)
     r["verify_all_ok"] = vok
     r["verify_checks"] = f"{npass}/{ntot}"
