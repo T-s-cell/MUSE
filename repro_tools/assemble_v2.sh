@@ -17,6 +17,7 @@ cd /dev_data/wlt/MUSE
   --out-dir "$SUM" >/dev/null
 cp "$SUM"/ett16_results.md "$SUM"/budget_table.md "$SUM"/status_summary.md \
    "$P/summary/" 2>/dev/null || true
+cp /dev_data/wlt/MUSE_logs/summary/verify_budget.md "$P/summary/"
 cp "$SUM"/*.json "$P/summary/" 2>/dev/null || true
 
 # 2. new forced-hash verify reports (one per run, incl. frozen legacy)
