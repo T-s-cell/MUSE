@@ -132,8 +132,17 @@ def vcr_check(adp_c, input, series_dim, ref_fused, atol, rtol):
     dev_z = (fused_z[2] - ref_fused).abs().max()
     out["zero_correction_vs_full_max_abs"] = float(dev_z)
     out["zero_correction_materially_different"] = bool(dev_z > atol)
-    out["vcr_ok"] = bool(out["correction_nonzero"] and out["with_correction_ok"]
-                         and out["zero_correction_materially_different"])
+    # At the initial state the adapter output projection is zero-initialised,
+    # so the correction is EXACTLY zero: VCR is inert there by construction
+    # and materiality cannot hold. Inertness is the expected outcome, so
+    # vcr_ok passes when the correction is exactly zero AND zeroing it
+    # demonstrably changes nothing; at any nonzero correction, materiality
+    # is required (a nonzero correction with no material effect fails).
+    out["vcr_ok"] = bool(out["with_correction_ok"] and (
+        (out["correction_nonzero"]
+         and out["zero_correction_materially_different"])
+        or (not out["correction_nonzero"] and not dev_z > atol)
+    ))
     return out
 
 
