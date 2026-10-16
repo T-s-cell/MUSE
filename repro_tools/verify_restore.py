@@ -68,6 +68,12 @@ LEGACY_HYPER_PARAMS = {
     "patience": 2,
     "seq_len": 1440,
 }
+# Immutable pretrained MAE backbone used by every run of this campaign
+# (recorded as env.mae_sha in all orchestrator-era run_config.json files;
+# same file path and content for the frozen stage-1 run).
+LEGACY_EXPECTED_MAE_SHA = (
+    "c551c37b63a221a3e6d7d7f49e96f34078c9b183f788bedc0387493521bade0e"
+)
 
 
 def sha256_file(path):
@@ -265,16 +271,53 @@ def main():
     }
 
     # 1. hashes ----------------------------------------------------------
-    csv_sha = sha256_file(os.path.join(FORECASTING_DATASET_PATH, run["series"]))
+    # Forced comparison: a missing/unverifiable hash must FAIL, never
+    # vacuously PASS. Expected values come from run_config.env (recorded at
+    # training time) and dataset_sync.json; CLI args only override.
+    def _fmt(h):
+        return "MISSING" if not h else h[:16] + "..."
+
+    csv_path = os.path.join(FORECASTING_DATASET_PATH, run["series"])
+    csv_sha = sha256_file(csv_path) if os.path.exists(csv_path) else None
     mae_path = manifest.get("mae_ckpt_path") or args.mae_path
-    mae_sha = sha256_file(mae_path) if mae_path else None
-    check("data_sha_expected",
-          args.data_sha is None or args.data_sha == csv_sha,
-          f"csv={csv_sha[:16]}...")
-    check("mae_sha_expected",
-          args.mae_sha is None or (mae_sha is not None and args.mae_sha == mae_sha),
-          f"mae={None if mae_sha is None else mae_sha[:16] + '...'}")
-    report["hashes"] = {"csv": csv_sha, "mae": mae_sha}
+    mae_sha = (sha256_file(mae_path)
+               if mae_path and os.path.exists(mae_path) else None)
+
+    expected_csv = args.data_sha
+    expected_mae = args.mae_sha
+    if run_cfg is not None:
+        expected_mae = expected_mae or (run_cfg.get("env") or {}).get("mae_sha")
+    if expected_csv is None:
+        sync_path = os.path.join(FORECASTING_DATASET_PATH, "dataset_sync.json")
+        if os.path.exists(sync_path):
+            entry = (load_json(sync_path).get("files") or {}).get(run["series"])
+            expected_csv = entry.get("dst_sha256") if entry else None
+    if expected_mae is None and run_cfg is None:
+        expected_mae = LEGACY_EXPECTED_MAE_SHA
+
+    check("mae_sha_computed", mae_sha is not None,
+          f"computed={_fmt(mae_sha)} path={mae_path}")
+    check("mae_sha_matches_expected",
+          mae_sha is not None and expected_mae is not None
+          and mae_sha == expected_mae,
+          f"expected={_fmt(expected_mae)} computed={_fmt(mae_sha)}")
+    check("data_sha_computed", csv_sha is not None,
+          f"computed={_fmt(csv_sha)} path={csv_path}")
+    check("data_sha_matches_expected",
+          csv_sha is not None and expected_csv is not None
+          and csv_sha == expected_csv,
+          f"expected={_fmt(expected_csv)} computed={_fmt(csv_sha)}")
+    report["hashes"] = {
+        "csv": csv_sha, "mae": mae_sha,
+        "expected_csv": expected_csv, "expected_mae": expected_mae,
+    }
+    report["metadata_hashes"] = {
+        os.path.basename(p): sha256_file(p)
+        for p in [os.path.join(args.out_dir, "run_config.json"),
+                  os.path.join(args.out_dir, "manifest.json"),
+                  rec["saved"].get("point_meta_path")]
+        if p and os.path.exists(p)
+    }
 
     # 2. pipeline rebuild (from SAVED config) ------------------------------
     hyper = dict(hyper_params)
