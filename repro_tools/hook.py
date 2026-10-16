@@ -573,9 +573,10 @@ class ReproHook:
         value_count = 0
         batch_ms = []
         tail_info = None
+        last_batch_finite = False
 
         def _one_batch(input, target):
-            nonlocal square_sum, value_count
+            nonlocal square_sum, value_count, last_batch_finite
             tb = time.perf_counter()
             input, target = input.to(device), target.to(device)
             output = model_base.model(
@@ -589,6 +590,11 @@ class ReproHook:
             err = (output - target).double()
             square_sum += err.square().sum().item()
             value_count += err.numel()
+            last_batch_finite = bool(
+                torch.isfinite(input).all()
+                and torch.isfinite(target).all()
+                and torch.isfinite(output).all()
+            )
             batch_ms.append((time.perf_counter() - tb) * 1000.0)
 
         with torch.no_grad():
@@ -621,11 +627,7 @@ class ReproHook:
                         "n_samples": int(input.shape[0]),
                         "official_tail_n": int(tail_n),
                         "input_shape": list(input.shape),
-                        "finite": bool(
-                            torch.isfinite(input).all()
-                            and torch.isfinite(target).all()
-                            and torch.isfinite(output).all()
-                        ),
+                        "finite": last_batch_finite,
                     }
         elapsed = time.perf_counter() - t0
         restore_rng(rng)
