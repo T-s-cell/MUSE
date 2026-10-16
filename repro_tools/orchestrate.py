@@ -517,13 +517,18 @@ def main():
         if e["status"] == "running" and pid_alive(e.get("pid")):
             raise SystemExit(f"another orchestrator owns {e['run_id']} (pid {e['pid']})")
         cfg = next(c for c in manifest["configs"] if c["config_id"] == e["config_id"])
-        ok = run_entry(e, cfg, args, queue_path, queue)
-        if ok is False:
-            n_fail += 1
-            continue
-        if ok is None:  # dry-run
-            continue
-        pv = postverify_entry(e, args, queue_path, queue)
+        if e["status"] == "postverify":
+            # Recovered entry: training finished (recover_stale vetted
+            # natural completion) — go straight to postverify, no retrain.
+            pv = postverify_entry(e, args, queue_path, queue)
+        else:
+            ok = run_entry(e, cfg, args, queue_path, queue)
+            if ok is False:
+                n_fail += 1
+                continue
+            if ok is None:  # dry-run
+                continue
+            pv = postverify_entry(e, args, queue_path, queue)
         if pv is False:
             n_fail += 1
         elif pv is True:
