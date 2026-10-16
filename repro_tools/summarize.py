@@ -177,6 +177,12 @@ def rollup_run(run_id, status, attempt, out_dir):
                 "train_peak_reserved_mb": last.get("train_peak_reserved_mb"),
                 "val_peak_alloc_mb": last.get("peak_alloc_mb"),
             }
+            # train_peak_alloc_mb is torch max_memory_allocated (monotone),
+            # so the max over epochs is the true full-run training peak.
+            peaks = [v.get("train_peak_alloc_mb") for v in v_epoch
+                     if v.get("train_peak_alloc_mb")]
+            if peaks:
+                r["full_peak_alloc_mb"] = max(peaks)
     if tr:
         mm = tr.get("mean_metrics") or []
         # canonical-16 layout: [mae,mse,rmse,...,mae_norm,mse_norm,rmse_norm,...]
@@ -191,6 +197,7 @@ def rollup_run(run_id, status, attempt, out_dir):
         r["preds_shape"] = tr.get("preds_shape")
         r["official_fit_s"] = tr.get("official_fit_s")
         r["official_total_inference_s"] = tr.get("official_total_inference_s")
+        r["test_dump_elapsed_s"] = tr.get("dump_elapsed_s")
     if rec:
         r["mse_recomputed"] = rec.get("mse_recomputed")
         r["mae_recomputed"] = rec.get("mae_recomputed")
@@ -328,17 +335,40 @@ def budget_rows(rollups):
         bs = r.get("batch_size")
         tib = ti.get("train_batches_full")
         ep = r.get("num_epochs")
+        nev = r.get("n_epoch_validations") or 0
         src = ("实测" if r.get("kind") == "formal" and r.get("fit_wall_s")
                else ("预检外推" if r.get("kind") == "preflight" else "待测"))
         epoch_train_s = None
         if wmean and tib:
             epoch_train_s = tib * wmean / 1000.0
-        est_total = None
+        # official_epoch_validate_time_s is CUMULATIVE over all epoch
+        # validations -> per-epoch value is the quotient, not the raw field.
+        val_s_per_ep = None
+        if r.get("official_epoch_validate_time_s") and nev:
+            val_s_per_ep = r["official_epoch_validate_time_s"] / nev
+        cap_train_h = None
         if epoch_train_s and ep:
-            est_total = epoch_train_s * ep
+            cap_train_h = epoch_train_s * ep / 3600.0
+        cap_val_h = None
+        if val_s_per_ep and ep:
+            cap_val_h = val_s_per_ep * ep / 3600.0
+        cap_tv_h = (cap_train_h + cap_val_h
+                    if cap_train_h is not None and cap_val_h is not None
+                    else None)
+        test_h = None
+        if (r.get("official_total_inference_s") is not None
+                or r.get("test_dump_elapsed_s") is not None):
+            test_h = ((r.get("official_total_inference_s") or 0)
+                      + (r.get("test_dump_elapsed_s") or 0)) / 3600.0
+        export_s = None
+        if (r.get("best_dump_time_s") is not None
+                or r.get("best_save_time_s") is not None):
+            export_s = ((r.get("best_dump_time_s") or 0)
+                        + (r.get("best_save_time_s") or 0))
+        full_peak = r.get("full_peak_alloc_mb")
+        peak_warmup = (r.get("peak_after_warmup") or {}).get("peak_alloc_mb")
         pv = r.get("preflight_val") or {}
         ev = r.get("last_epoch_val") or {}
-        peak = (r.get("peak_after_warmup") or {}).get("peak_alloc_mb")
         val_peak = ev.get("val_peak_alloc_mb") or pv.get("val_peak_alloc_mb")
         rows.append("| " + " | ".join([
             r["run_id"], classify(r), src,
@@ -347,18 +377,25 @@ def budget_rows(rollups):
             fmt(ep), fmt(bs), fmt(r.get("seq_len")),
             fmt(wmean, 1), fmt(wm.get("median"), 1), fmt(wm.get("p95"), 1),
             fmt(epoch_train_s, 1),
-            fmt(r.get("official_epoch_validate_time_s"), 1),
+            fmt(val_s_per_ep, 1),
+            fmt(cap_train_h, 2) if cap_train_h else "-",
+            fmt(cap_val_h, 2) if cap_val_h else "-",
+            fmt(cap_tv_h, 2) if cap_tv_h else "-",
+            fmt(test_h, 3) if test_h else "-",
+            fmt(export_s, 1) if export_s else "-",
+            fmt(full_peak / 1024.0, 1) if full_peak else "-",
+            fmt(peak_warmup / 1024.0, 1) if peak_warmup else "-",
+            fmt(val_peak / 1024.0, 1) if val_peak else "-",
             fmt(pv.get("batch_ms_mean"), 1),
             fmt(pv.get("n_batches_full")),
-            fmt(peak / 1024.0, 1) if peak else "-",
-            fmt(val_peak / 1024.0, 1) if val_peak else "-",
             fmt(r.get("fit_wall_s"), 0),
-            fmt(est_total / 3600.0, 2) if est_total else "-",
         ]) + " |")
     header = ("| run_id | 状态 | 来源 | train窗 | 满批 | 尾样 | max_ep | "
               "bs | L | wall_ms均值 | 中位 | P95 | 训练s/ep | "
-              "验证s(ep) | 预检val_ms/b | 预检满批数 | 峰值GiB(warmup后) | "
-              "验证峰GiB | 实测fit_s | 估上限h |")
+              "验证s/轮 | 上限h(训练) | 上限h(验证) | 上限h(训练+验证) | "
+              "测试h(推理+导出) | 导出累计s(训练期) | 全程峰GiB(训练) | "
+              "warmup读GiB | 验证峰GiB | 预检val_ms/b | 预检满批数 | "
+              "实测fit_s |")
     return ms_table(rows, header.split("|")[1:-1])
 
 
@@ -411,7 +448,12 @@ def main():
         f.write("# ETT 16 组结果 vs 论文 Table 4\n\n" + ett16_table(ett) + "\n")
     with open(os.path.join(out_dir, "budget_table.md"), "w") as f:
         f.write("# 预算表(实测/预检外推)\n\n"
-                "上限=满轮数×实测单轮;早停可提前,不确定性单列;"
+                "口径:上限h(训练+验证)=(实测训练s/轮+实测验证s/轮)×满轮数;"
+                "早停可提前,不确定性单列;测试h(推理+导出)按实测量单列,"
+                "不含恢复/复验;导出累计s=训练期 best 预测导出+落盘累计;"
+                "全程峰GiB(训练)=各轮 train_peak_alloc_mb 最大值"
+                "(torch 单调峰值=全程真实峰值),与 warmup 读值分列;"
+                "恢复/复验预算(verify_restore+recompute)见 verify_budget.md;"
                 "ETTh1 数字不外推。\n\n" + budget_rows(rollups) + "\n")
 
     counts = {}

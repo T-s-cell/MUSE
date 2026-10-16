@@ -444,8 +444,16 @@ def main():
             and all(v["ok"] for v in loss_cmp.values())
 
     vcr_iter = [it.get("vcr") for it in report["iterations"]]
+    # Iteration 0 is the initial state: the adapter output projection is
+    # zero-initialised, so the correction tensor is exactly zero there by
+    # construction. VCR-nonzero is therefore asserted on POST-UPDATE
+    # iterations and requires materiality (zeroing the correction must move
+    # the unchunked-reference comparison well beyond atol).
+    post = [v for v in vcr_iter[1:] if v is not None]
     report["vcr_nonzero"] = bool(
-        all(v is not None and v["correction_nonzero"] for v in vcr_iter)
+        post and all(v["correction_nonzero"] for v in post)
+        and all(v["zero_correction_vs_full_max_abs"] > report["atol"]
+                for v in post)
     )
     report["vcr_direct"] = {
         "correction_max_abs": [v["correction_max_abs"] for v in vcr_iter],
@@ -453,9 +461,12 @@ def main():
             [v["with_correction_vs_full_max_abs"] for v in vcr_iter],
         "zero_correction_vs_full_max_abs":
             [v["zero_correction_vs_full_max_abs"] for v in vcr_iter],
-        "note": "vcr_nonzero now evidenced on the correction tensor and its "
-                "output materiality, not a whole-model checksum; checksums "
-                "kept per-iteration as auxiliary info",
+        "note": "vcr_nonzero evidenced on the correction tensor itself "
+                "(post-update iterations; iter0 correction is exactly 0 by "
+                "zero-initialisation) plus materiality: zeroing the "
+                "correction must shift the output vs the unchunked "
+                "reference by more than atol; checksums kept per-iteration "
+                "as auxiliary info",
     }
 
     exempt_params = {}
