@@ -343,9 +343,19 @@ def budget_rows(rollups):
             epoch_train_s = tib * wmean / 1000.0
         # official_epoch_validate_time_s is CUMULATIVE over all epoch
         # validations -> per-epoch value is the quotient, not the raw field.
+        # Formal runs have real per-epoch measurements; probes stopped at
+        # the step cap never finish an epoch, so their per-epoch
+        # validation is extrapolated from the capped-val throughput
+        # (full batches x measured ms/batch) and marked 预检外推.
+        pv = r.get("preflight_val") or {}
         val_s_per_ep = None
+        val_src = "实测"
         if r.get("official_epoch_validate_time_s") and nev:
             val_s_per_ep = r["official_epoch_validate_time_s"] / nev
+        elif pv.get("n_batches_full") and pv.get("batch_ms_mean"):
+            val_s_per_ep = (pv["n_batches_full"]
+                            * pv["batch_ms_mean"] / 1000.0)
+            val_src = "预检外推"
         cap_train_h = None
         if epoch_train_s and ep:
             cap_train_h = epoch_train_s * ep / 3600.0
@@ -367,7 +377,6 @@ def budget_rows(rollups):
                         + (r.get("best_save_time_s") or 0))
         full_peak = r.get("full_peak_alloc_mb")
         peak_warmup = (r.get("peak_after_warmup") or {}).get("peak_alloc_mb")
-        pv = r.get("preflight_val") or {}
         ev = r.get("last_epoch_val") or {}
         val_peak = ev.get("val_peak_alloc_mb") or pv.get("val_peak_alloc_mb")
         rows.append("| " + " | ".join([
@@ -377,7 +386,7 @@ def budget_rows(rollups):
             fmt(ep), fmt(bs), fmt(r.get("seq_len")),
             fmt(wmean, 1), fmt(wm.get("median"), 1), fmt(wm.get("p95"), 1),
             fmt(epoch_train_s, 1),
-            fmt(val_s_per_ep, 1),
+            fmt(val_s_per_ep, 1), val_src,
             fmt(cap_train_h, 2) if cap_train_h else "-",
             fmt(cap_val_h, 2) if cap_val_h else "-",
             fmt(cap_tv_h, 2) if cap_tv_h else "-",
@@ -392,10 +401,10 @@ def budget_rows(rollups):
         ]) + " |")
     header = ("| run_id | 状态 | 来源 | train窗 | 满批 | 尾样 | max_ep | "
               "bs | L | wall_ms均值 | 中位 | P95 | 训练s/ep | "
-              "验证s/轮 | 上限h(训练) | 上限h(验证) | 上限h(训练+验证) | "
-              "测试h(推理+导出) | 导出累计s(训练期) | 全程峰GiB(训练) | "
-              "warmup读GiB | 验证峰GiB | 预检val_ms/b | 预检满批数 | "
-              "实测fit_s |")
+              "验证s/轮 | 验证来源 | 上限h(训练) | 上限h(验证) | "
+              "上限h(训练+验证) | 测试h(推理+导出) | 导出累计s(训练期) | "
+              "全程峰GiB(训练) | warmup读GiB | 验证峰GiB | 预检val_ms/b | "
+              "预检满批数 | 实测fit_s |")
     return ms_table(rows, header.split("|")[1:-1])
 
 
