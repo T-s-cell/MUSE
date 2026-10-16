@@ -97,7 +97,47 @@ def checksum(adapter):
                      for p in adapter.model.parameters()))
 
 
-def fwd_predictions(adapter, input, series_dim, mode):
+def vcr_check(adp_c, input, series_dim, ref_fused, atol, rtol):
+    """Directly inspect the VCR correction output of the chunked branch.
+
+    vcr_nonzero must be evidenced on the correction tensor itself, not by a
+    whole-model parameter checksum: (1) correction exists and is nonzero,
+    (2) predictions WITH correction match the unchunked reference (within
+    tol), (3) predictions with the correction ZEROED deviate from the
+    unchunked reference by more than tol (materiality: the correction
+    actually participates in the output).
+    """
+    model = adp_c._core_model()
+    ctx = model.prepare_variable_chunk_context(input, fp64=False)
+    corr = ctx["correction"]
+    out = {
+        "correction_present": corr is not None,
+        "correction_max_abs": (float(corr.abs().max())
+                               if corr is not None else None),
+    }
+    out["correction_nonzero"] = bool(
+        out["correction_present"] and out["correction_max_abs"] > 0.0
+    )
+    fused_c = fwd_predictions(adp_c, input, series_dim, "chunks")
+    dev = (fused_c[2] - ref_fused).abs().max()
+    out["with_correction_vs_full_max_abs"] = float(dev)
+    out["with_correction_ok"] = bool(
+        torch.isclose(torch.tensor(float(dev)),
+                      torch.tensor(0.0), atol=atol, rtol=rtol).item()
+        or dev <= atol
+    )
+    zeros = None if corr is None else torch.zeros_like(corr)
+    fused_z = fwd_predictions(adp_c, input, series_dim, "chunks",
+                              correction_override=zeros)
+    dev_z = (fused_z[2] - ref_fused).abs().max()
+    out["zero_correction_vs_full_max_abs"] = float(dev_z)
+    out["zero_correction_materially_different"] = bool(dev_z > atol)
+    out["vcr_ok"] = bool(out["correction_nonzero"] and out["with_correction_ok"]
+                         and out["zero_correction_materially_different"])
+    return out
+
+
+def fwd_predictions(adapter, input, series_dim, mode, correction_override=None):
     adapter.model.eval()
     with torch.no_grad():
         if mode == "full":
@@ -109,13 +149,15 @@ def fwd_predictions(adapter, input, series_dim, mode):
         else:
             model = adapter._core_model()
             ctx = model.prepare_variable_chunk_context(input, fp64=False)
+            corr = (ctx["correction"] if correction_override is None
+                    else correction_override)
             chans, tps, fuses = [], [], []
             for start in range(0, ctx["num_variables"],
                                model.variable_chunk_size):
                 end = min(start + model.variable_chunk_size,
                           ctx["num_variables"])
                 r = model.forward_variable_chunk(
-                    ctx, start, end, correction=ctx["correction"],
+                    ctx, start, end, correction=corr,
                     return_branches=True,
                 )
                 chans.append(r["channel"])
@@ -316,15 +358,23 @@ def main():
     }
     lu, gu = train_step_unchunked(adp_u, criterion, batch, args.num_vars)
     lc, gc = train_step_chunked(adp_c, criterion, batch, args.num_vars)
-    loss_cmp = {
-        "total": jcmp(torch.tensor(lc["total"]), torch.tensor(lu["total"]),
-                      args.atol, args.rtol),
-        "channel": jcmp(torch.tensor(lc["channel"]), torch.tensor(lu["channel"]),
-                        args.atol, args.rtol),
-        "additional": jcmp(torch.tensor(lc["additional"]),
-                           torch.tensor(lu["additional"]),
-                           args.atol, args.rtol),
-    }
+
+    def cmp_losses(lu, lc):
+        # The two official paths consume: channel (MSE), additional
+        # (chunked tp + gate; unchunked additional_loss = tp + gate by
+        # construction), and total. tp/gate split recorded informationally.
+        return {
+            "total": jcmp(torch.tensor(lc["total"]), torch.tensor(lu["total"]),
+                          args.atol, args.rtol),
+            "channel": jcmp(torch.tensor(lc["channel"]),
+                            torch.tensor(lu["channel"]),
+                            args.atol, args.rtol),
+            "additional": jcmp(torch.tensor(lc["additional"]),
+                               torch.tensor(lu["additional"]),
+                               args.atol, args.rtol),
+        }
+
+    loss_cmp = cmp_losses(lu, lc)
     grad_cmp, grad_ok = compare_grads(gu, gc, args.atol, args.rtol)
     it = record("init", {
         "preds": pred_cmp, "losses_u": lu, "losses_c": lc,
@@ -332,10 +382,13 @@ def main():
         "grads_max_abs": max(v.get("max_abs", 0.0) for v in grad_cmp.values()
                              if isinstance(v, dict) and "max_abs" in v),
         "grads_all_ok": grad_ok,
+        "vcr": vcr_check(adp_c, input, args.num_vars, pu[2],
+                         args.atol, args.rtol),
         "checksum_u": checksum(adp_u), "checksum_c": checksum(adp_c),
     })
     it["grads"] = grad_cmp
-    all_ok = all_ok and grad_ok and all(v["ok"] for v in pred_cmp.values()) \
+    all_ok = all_ok and grad_ok and it["vcr"]["vcr_ok"] \
+        and all(v["ok"] for v in pred_cmp.values()) \
         and all(v["ok"] for v in loss_cmp.values())
 
     # ---- update iterations ----------------------------------------------
@@ -366,14 +419,18 @@ def main():
         }
         lu, gu = train_step_unchunked(adp_u, criterion, batch, args.num_vars)
         lc, gc = train_step_chunked(adp_c, criterion, batch, args.num_vars)
+        loss_cmp = cmp_losses(lu, lc)
         grad_cmp, grad_ok = compare_grads(gu, gc, args.atol, args.rtol)
         it = record(f"after_update_{k}", {
             "preds": pred_cmp,
             "losses_u": lu, "losses_c": lc,
+            "loss_cmp": loss_cmp,
             "grads_max_abs": max(v.get("max_abs", 0.0) for v in grad_cmp.values()
                                  if isinstance(v, dict) and "max_abs" in v),
             "grads_all_ok": grad_ok,
             "update_all_ok": upd_ok,
+            "vcr": vcr_check(adp_c, input, args.num_vars, pu[2],
+                             args.atol, args.rtol),
             "update_exempt_params": sorted(
                 n for n, v in upd_cmp.items()
                 if v.get("n_fail") and v.get("tiny_grad_exempt")
@@ -382,13 +439,43 @@ def main():
         })
         it["grads"] = grad_cmp
         it["update"] = upd_cmp
-        all_ok = all_ok and grad_ok and upd_ok \
-            and all(v["ok"] for v in pred_cmp.values())
+        all_ok = all_ok and grad_ok and upd_ok and it["vcr"]["vcr_ok"] \
+            and all(v["ok"] for v in pred_cmp.values()) \
+            and all(v["ok"] for v in loss_cmp.values())
 
-    report["vcr_nonzero"] = (
-        report["iterations"][0]["checksum_u"]
-        != report["iterations"][-1]["checksum_u"]
+    vcr_iter = [it.get("vcr") for it in report["iterations"]]
+    report["vcr_nonzero"] = bool(
+        all(v is not None and v["correction_nonzero"] for v in vcr_iter)
     )
+    report["vcr_direct"] = {
+        "correction_max_abs": [v["correction_max_abs"] for v in vcr_iter],
+        "with_correction_vs_full_max_abs":
+            [v["with_correction_vs_full_max_abs"] for v in vcr_iter],
+        "zero_correction_vs_full_max_abs":
+            [v["zero_correction_vs_full_max_abs"] for v in vcr_iter],
+        "note": "vcr_nonzero now evidenced on the correction tensor and its "
+                "output materiality, not a whole-model checksum; checksums "
+                "kept per-iteration as auxiliary info",
+    }
+
+    exempt_params = {}
+    n_exempt_elem = 0
+    for it in report["iterations"]:
+        for n, v in (it.get("update") or {}).items():
+            if v.get("n_fail") and v.get("tiny_grad_exempt"):
+                e = exempt_params.setdefault(n, {"updates": 0, "n_fail_max": 0})
+                e["updates"] += 1
+                e["n_fail_max"] = max(e["n_fail_max"], int(v["n_fail"]))
+                n_exempt_elem += int(v["n_fail"])
+    report["exempt_summary"] = {
+        "used": bool(exempt_params),
+        "n_exempt_elements_total": n_exempt_elem,
+        "params": exempt_params,
+        "criterion": "element exempt only if BOTH branch gradients there are "
+                     "<= 10x the per-parameter grad agreement (noise floor); "
+                     "well-conditioned elements never exempt",
+    }
+    report["strict_pass"] = bool(all_ok and not exempt_params)
     fp_u = fingerprint_diff(fingerprint0,
                             module_fingerprint(adp_u._core_model().vision_model))
     fp_c = fingerprint_diff(fingerprint_c0,
