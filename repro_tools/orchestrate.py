@@ -359,10 +359,12 @@ def run_entry(entry, cfg, args, queue_path, queue):
             write_failure(out_dir, entry, "launch", "keyboard-interrupt; child terminated", log_path)
             return False
     if rc != 0:
-        if entry["kind"] == "controlled_stop":
-            # SystemExit from the controlled stop is the EXPECTED outcome;
-            # postverify checks the real criteria (stop_reason, no test).
-            print(f"[orch] controlled stop exit {rc} (expected)")
+        if entry["kind"] in ("controlled_stop", "preflight"):
+            # SystemExit from the step cap is the EXPECTED outcome for both
+            # truncated kinds; postverify (check_controlled_stop /
+            # check_preflight) validates the real criteria (stop_reason,
+            # capped-val record, no test artifacts).
+            print(f"[orch] {entry['kind']} stop exit {rc} (expected)")
             return True
         entry["status"] = "failed"
         entry["finished_at"] = now()
