@@ -196,6 +196,8 @@ def train_step_unchunked(adapter, criterion, batch, series_dim):
         "total": float(total.item()),
         "channel": float(loss.item()),
         "additional": float(additional.item()),
+        "tp": float(out["tp_loss"].item()),
+        "gate": float(out["gate_loss"].item()),
     }, grads_of(adapter)
 
 
@@ -240,13 +242,13 @@ def compare_update(adp_u, adp_c, before_u, before_c, gu, gc, atol, rtol,
     Adam's m/(sqrt(v)+eps) normalization ill-conditions elements whose
     gradient is near zero: a grad difference far below the demonstrated
     branch agreement maps to a delta difference ABOVE the fixed atol.
-    An element is exempt only if the smaller of the two branch gradients
-    there is <= 10x the observed per-parameter grad agreement (i.e. the
-    element's gradient is indistinguishable from zero at the measured
-    noise floor, so its Adam direction is numerical noise on BOTH
-    branches). Well-conditioned elements (large grads) are never exempt,
-    so a real chunked-path defect still fails. Every exemption is
-    recorded.
+    An element is exempt only if EACH branch's gradient there, taken
+    independently, is <= 10x the observed per-parameter grad agreement
+    (i.e. BOTH branches' gradients are individually indistinguishable
+    from zero at the measured noise floor, so the Adam direction is
+    numerical noise on both sides). Well-conditioned elements (large
+    grads on either branch) are never exempt, so a real chunked-path
+    defect still fails. Every exemption is recorded.
     """
     per_param = {}
     all_ok = True
@@ -270,8 +272,10 @@ def compare_update(adp_u, adp_c, before_u, before_c, gu, gc, atol, rtol,
             gu_f = g_u.abs()[fail]
             gc_f = g_c.abs()[fail]
             exempt = bool(
-                torch.minimum(gu_f, gc_f).max() <= tiny
+                gu_f.max() <= tiny and gc_f.max() <= tiny
             )
+            entry["grad_u_max_failing"] = float(gu_f.max())
+            entry["grad_c_max_failing"] = float(gc_f.max())
             k = int((diff * fail).argmax())
             entry.update({
                 "failing_grad_max": float(max(gu_f.max(), gc_f.max())),
@@ -369,15 +373,20 @@ def main():
     lc, gc = train_step_chunked(adp_c, criterion, batch, args.num_vars)
 
     def cmp_losses(lu, lc):
-        # The two official paths consume: channel (MSE), additional
-        # (chunked tp + gate; unchunked additional_loss = tp + gate by
-        # construction), and total. tp/gate split recorded informationally.
+        # All four components compared separately: channel (MSE), tp,
+        # gate, and total. "additional" is kept as the chunked tp+gate
+        # sum vs the unchunked additional_loss (equal by construction)
+        # to mirror what the official paths actually consume.
         return {
             "total": jcmp(torch.tensor(lc["total"]), torch.tensor(lu["total"]),
                           args.atol, args.rtol),
             "channel": jcmp(torch.tensor(lc["channel"]),
                             torch.tensor(lu["channel"]),
                             args.atol, args.rtol),
+            "tp": jcmp(torch.tensor(lc["tp"]), torch.tensor(lu["tp"]),
+                       args.atol, args.rtol),
+            "gate": jcmp(torch.tensor(lc["gate"]), torch.tensor(lu["gate"]),
+                         args.atol, args.rtol),
             "additional": jcmp(torch.tensor(lc["additional"]),
                                torch.tensor(lu["additional"]),
                                args.atol, args.rtol),
@@ -491,9 +500,10 @@ def main():
         "used": bool(exempt_params),
         "n_exempt_elements_total": n_exempt_elem,
         "params": exempt_params,
-        "criterion": "element exempt only if BOTH branch gradients there are "
-                     "<= 10x the per-parameter grad agreement (noise floor); "
-                     "well-conditioned elements never exempt",
+        "criterion": "element exempt only if EACH branch's gradient there "
+                     "is independently <= 10x the per-parameter grad "
+                     "agreement (noise floor); a large gradient on either "
+                     "branch vetoes exemption",
     }
     report["strict_pass"] = bool(all_ok and not exempt_params)
     fp_u = fingerprint_diff(fingerprint0,

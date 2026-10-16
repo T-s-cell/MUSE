@@ -496,4 +496,6 @@ class MUSE(DeepForecastingModelBase):
         return {
             "output": result["channel"],
             "additional_loss": tp_loss + gate_loss,
+            "tp_loss": tp_loss,
+            "gate_loss": gate_loss,
         }
