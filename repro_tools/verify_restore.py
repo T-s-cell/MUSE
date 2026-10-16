@@ -279,7 +279,10 @@ def main():
 
     csv_path = os.path.join(FORECASTING_DATASET_PATH, run["series"])
     csv_sha = sha256_file(csv_path) if os.path.exists(csv_path) else None
-    mae_path = manifest.get("mae_ckpt_path") or args.mae_path
+    mae_path = (manifest.get("mae_ckpt_path") or args.mae_path
+                or (run_cfg.get("hyper_params_eff") or {}).get("checkpoint_path")
+                if run_cfg is not None
+                else (manifest.get("mae_ckpt_path") or args.mae_path))
     mae_sha = (sha256_file(mae_path)
                if mae_path and os.path.exists(mae_path) else None)
 
