@@ -163,7 +163,7 @@ def make_entry(cfg, kind, args, logs_root):
     }
 
 
-def check_natural_completion(out_dir):
+def check_natural_completion(out_dir, kind="formal"):
     """Stale postverify may re-enter only with proof of finished training."""
     summary = os.path.join(out_dir, "summary.json")
     manifest = os.path.join(out_dir, "manifest.json")
@@ -175,6 +175,10 @@ def check_natural_completion(out_dir):
         reason = str(s.get("stop_reason", s.get("reason", "")))
     except (OSError, ValueError):
         return False, "summary.json unreadable"
+    if kind in ("preflight", "controlled_stop"):
+        # Reaching the step cap IS the intended completion for probes.
+        if reason == "max_steps":
+            return True, f"stop_reason={reason!r}"
     if "max_steps" in reason or "interrupt" in reason:
         return False, f"summary stop_reason={reason!r}"
     return True, f"stop_reason={reason!r}"
@@ -242,7 +246,7 @@ def recover_stale(queue, dry):
         elif e["status"] == "postverify" and not pid_alive(e.get("pid")):
             if e.get("postverify_recovered"):
                 continue
-            ok, detail = check_natural_completion(e["out_dir"])
+            ok, detail = check_natural_completion(e["out_dir"], e.get("kind"))
             if ok:
                 e["pid"] = None
                 e["postverify_recovered"] = True
@@ -370,6 +374,7 @@ def run_entry(entry, cfg, args, queue_path, queue):
         entry["finished_at"] = now()
         entry["note"] = f"training exit code {rc}"
         write_failure(out_dir, entry, "train", f"exit code {rc}", log_path)
+        save_queue(queue_path, queue)
         print(f"[orch] FAIL {entry['run_id']}: training exit {rc}")
         return False
     return True
