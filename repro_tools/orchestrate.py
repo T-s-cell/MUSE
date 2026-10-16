@@ -34,6 +34,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 
 from .run_config import write_run_config, validate as validate_run_config
 
@@ -304,7 +305,11 @@ def run_entry(entry, cfg, args, queue_path, queue):
         "num_workers": 0,
         "norm": True,
     }
-    sa = cfg.get("strategy_args_resolved", {})
+    # 40-group manifest stores seed/stride/num_rollings at top level (no
+    # strategy_args_resolved key); backfill so protocol fields never go null.
+    sa = cfg.get("strategy_args_resolved")
+    if not sa:
+        sa = {k: cfg[k] for k in ("seed", "stride", "num_rollings") if k in cfg}
     run_cfg = {
         "run_id": entry["run_id"],
         "kind": entry["kind"],
@@ -414,15 +419,29 @@ def postverify_entry(entry, args, queue_path, queue):
         ["recompute", [args.python, "-m", "repro_tools.recompute_test_metrics",
                        "--out-dir", out_dir]],
     ]
+    timings = []
     for name, argv in steps:
         print(f"[orch] POSTVERIFY {entry['run_id']}: {name}")
         if args.dry_run:
             print(f"[orch] DRY-RUN would run: {' '.join(argv)}")
             continue
         log_path = os.path.join(out_dir, f"postverify_{name}.log")
+        t0_mono = time.monotonic()
+        started_at = now()
         with open(log_path, "w") as log:
             rc = subprocess.call(argv, cwd=args.repo, stdout=log,
                                  stderr=subprocess.STDOUT)
+        # per-step timing persisted immediately so a crash mid-postverify
+        # still leaves the completed steps' measured durations on disk
+        timings.append({
+            "step": name,
+            "exit_code": rc,
+            "duration_s": time.monotonic() - t0_mono,
+            "started_at": started_at,
+            "finished_at": now(),
+        })
+        with open(os.path.join(out_dir, "postverify_timing.json"), "w") as tf:
+            json.dump(timings, tf, indent=2)
         if rc != 0:
             entry["status"] = "failed"
             entry["finished_at"] = now()
