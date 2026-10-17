@@ -299,8 +299,7 @@ def ms_table(rows, headers):
 def ett16_table(rollups):
     rows = []
     for r in sorted(
-        (x for x in rollups if x["config_id"] and
-         x["config_id"].startswith("ETT")),
+        (x for x in rollups if x["config_id"]),
         key=lambda x: (x["config_id"].split("_")[0],
                        int(x["config_id"].rsplit("_h", 1)[1]),
                        x["attempt"]),
