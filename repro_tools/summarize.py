@@ -455,6 +455,16 @@ def main():
            and r.get("kind") in (None, "formal")]
     with open(os.path.join(out_dir, "ett16_results.md"), "w") as f:
         f.write("# ETT 16 组结果 vs 论文 Table 4\n\n" + ett16_table(ett) + "\n")
+    nonett = [r for r in rollups
+              if (r.get("config_id") or "")
+              and not (r.get("config_id") or "").startswith("ETT")
+              and "_g3" not in r["run_id"]
+              and r.get("kind") in (None, "formal")
+              and r.get("paper")]
+    if nonett:
+        with open(os.path.join(out_dir, "nonett_results.md"), "w") as f:
+            f.write("# 非 ETT 正式结果 vs 论文 Table 4\n\n"
+                    + ett16_table(nonett) + "\n")
     with open(os.path.join(out_dir, "budget_table.md"), "w") as f:
         f.write("# 预算表(实测/预检外推)\n\n"
                 "口径:上限h(训练+验证)=(实测训练s/轮+实测验证s/轮)×满轮数;"
