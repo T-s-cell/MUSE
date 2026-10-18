@@ -10,8 +10,13 @@ sidecars for EXP-029.
   pred_npz (x1)       : runs/ wholesale (36 test npz + 36 replay npz +
                         36 replay_val npz + per-group jsons) +
                         36 training-time val npz + replay_summary.json
-  ckpts_1..4 (x4)     : 9 groups per pack — ckpt npz (118 arrays) +
-                        meta json. ~39MB/pack.
+  ckpts_1..4 (x4)     : 9 groups per pack — adapter-only ckpt npz
+                        (bitwise = full npz minus vision_model.* arrays,
+                        the frozen MAE backbone identical across all 36
+                        ckpts; ckpt_names still inventories the full
+                        npz) + meta json + pack_manifest.json.
+                        ~40MB/pack. Full 452MB npz stays on the compute
+                        server, pinned by npz_sha256 in each meta.
 
 MAE weights NEVER ship (path/bytes/sha in code_state.json).
 --tags selects which packs to (re)build; omitted packs keep their
@@ -23,8 +28,10 @@ import shutil
 import tarfile
 from pathlib import Path
 
+import numpy as np
+
 from repro_timemmd_common_v1 import protocol as P
-from repro_timemmd_common_v1.common import dump_json, \
+from repro_timemmd_common_v1.common import dump_json, load_json, \
     setup_deterministic_env, sha256_of
 
 LIMIT = 50 * 1024 * 1024
@@ -92,7 +99,11 @@ def main():
                     "sha256": P.EXP027_SELECTED_P_SHA256},
                 "exp028_out": str(P.exp028_out()),
                 "note": "MAE-Base weights stay on the compute server; "
-                        "only MUSE adapter ckpts (~4.6MB x 36) ship."}
+                        "ckpt packs ship the adapter-only view (~4.7MB "
+                        "x 36; vision_model.* stripped bitwise). Full "
+                        "452MB npz (incl. frozen backbone) stays at "
+                        "out_root on the compute server, pinned by "
+                        "npz_sha256 in each meta json."}
     dump_json(out_root / "code_state.json", manifest)
 
     stage = out_root / "packs_stage"
@@ -161,14 +172,36 @@ def main():
                 continue
             ck_stage = stage / tag
             ck_stage.mkdir(parents=True, exist_ok=True)
+            entries = {}
             chunk = groups[ci * CKPT_GROUPS_PER_PACK:
                            (ci + 1) * CKPT_GROUPS_PER_PACK]
             for dom, h in chunk:
-                for f in (out_root / P.ckpt_npz_name(dom, h),
-                          out_root / P.ckpt_meta_name(dom, h)):
-                    if not f.exists():
-                        raise SystemExit("[FATAL] ckpt missing: %s" % f)
-                    shutil.copyfile(str(f), str(ck_stage / f.name))
+                npz_f = out_root / P.ckpt_npz_name(dom, h)
+                meta_f = out_root / P.ckpt_meta_name(dom, h)
+                if not (npz_f.exists() and meta_f.exists()):
+                    raise SystemExit("[FATAL] ckpt missing: %s" % npz_f)
+                meta = load_json(meta_f)
+                z = dict(np.load(str(npz_f)))
+                names = [str(x) for x in z["ckpt_names"]]
+                kept = {"ckpt_names": z["ckpt_names"]}
+                for n in names:
+                    if not n.startswith("vision_model."):
+                        kept[n.replace(".", "__")] = z[n.replace(".", "__")]
+                staged_npz = ck_stage / npz_f.name
+                np.savez(str(staged_npz), **kept)
+                shutil.copyfile(str(meta_f), str(ck_stage / meta_f.name))
+                entries[P.group_id(dom, h)] = {
+                    "full_npz_sha256": meta["npz_sha256"],
+                    "full_npz_bytes": int(npz_f.stat().st_size),
+                    "adapter_npz_sha256": sha256_of(staged_npz),
+                    "backbone_sha256": meta["backbone_sha256"],
+                    "n_arrays_full": int(meta["n_arrays"])}
+            dump_json(ck_stage / "pack_manifest.json", {
+                "stripped": "vision_model.* (frozen MAE backbone, "
+                            "identical across all 36 ckpts)",
+                "note": "arrays kept bitwise; ckpt_names inventories the "
+                        "full npz; full npz pinned by full_npz_sha256",
+                "groups": entries})
             build_pack(out_dir, tag, ck_stage, [])
 
     shutil.rmtree(stage)
