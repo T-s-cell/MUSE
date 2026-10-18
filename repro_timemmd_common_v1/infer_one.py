@@ -38,8 +38,9 @@ def run_group(dom, h):
     npz_path = gdir / P.test_npz_name(dom, h)
     mjson = gdir / ("metrics__%s.json" % gid)
 
-    model = build_muse(load_ckpt=True).to("cuda:0")
+    model = build_muse(load_ckpt=True)
     configure_muse(model, dom, h)
+    model = model.to("cuda:0")
     meta = restore_muse_ckpt_strict(
         model, out_dir / P.ckpt_npz_name(dom, h),
         load_json(out_dir / P.ckpt_meta_name(dom, h)))

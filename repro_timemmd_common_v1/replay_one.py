@@ -61,8 +61,9 @@ def run_group(dom, h, atol=P.ATOL, rtol=P.RTOL, ckpt_override=None,
         out_dir / P.ckpt_meta_name(dom, h)
     sha_ckpt_pre = sha256_of(ckpt_path)
 
-    model = build_muse(load_ckpt=True).to("cuda:0")
+    model = build_muse(load_ckpt=True)
     configure_muse(model, dom, h)
+    model = model.to("cuda:0")
     meta = restore_muse_ckpt_strict(model, ckpt_path,
                                     load_json(meta_path))
 

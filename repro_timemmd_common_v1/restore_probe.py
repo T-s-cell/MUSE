@@ -33,8 +33,9 @@ def main():
     setup_deterministic_env()
     P.verify_frozen()
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    model = build_muse(load_ckpt=True).to(device)
+    model = build_muse(load_ckpt=True)
     configure_muse(model, args.dom, args.h)
+    model = model.to(device)
     meta = restore_muse_ckpt_strict(model, args.ckpt,
                                     load_json(args.meta))
     live = {npz_key(n): t.detach().cpu().numpy()
