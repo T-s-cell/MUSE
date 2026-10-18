@@ -72,7 +72,7 @@ def run_group(dom, h, pack_roots, out_dir, atol, rtol, batches):
 
     ident = all(
         identity_equal(a["window_index"], b["window_index"])
-        and bitwise_equal(a["truth"], b["truth"])
+        and bitwise_equal(a["Y"], b["truth"])
         and bitwise_equal(a["s"], b["s"])
         and bitwise_equal(a["orig_row"], b["orig_row"])
         and bitwise_equal(a["label_dates"], b["label_dates"])
