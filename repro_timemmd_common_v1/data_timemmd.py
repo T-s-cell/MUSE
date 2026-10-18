@@ -103,7 +103,7 @@ class DomainData:
         Y = self.series32[idx_lab]
         if not (all_finite(X) and all_finite(Y)):
             raise ValueError("non-finite windows %s H%d" % (self.domain, h))
-        return {"X": X, "Y": Y[:, :, None].copy(),
+        return {"X": X[:, :, None].copy(), "Y": Y[:, :, None].copy(),
                 "s": s_arr, "orig_row": orig_arr, "label_dates": lab_arr,
                 "window_index": np.arange(len(rows), dtype=np.int64),
                 "input_date_range": [r["input_date_range"] for r in rows]}
