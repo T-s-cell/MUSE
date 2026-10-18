@@ -277,7 +277,8 @@ def b3_real_steps(pinfo, pd):
         m.train()
         perm = np.random.RandomState(P.SEED).permutation(n_train)
         steps_log, step1_pattern = [], None
-        for si in range(B3_STEPS):
+        n_steps = min(B3_STEPS, P.expected_steps(n_train))
+        for si in range(n_steps):
             idx = perm[si * P.BATCH:(si + 1) * P.BATCH]
             xb = torch.from_numpy(np.ascontiguousarray(X[idx])).to(DEVICE)
             yb = torch.from_numpy(np.ascontiguousarray(Y[idx])).to(DEVICE)
@@ -302,8 +303,12 @@ def b3_real_steps(pinfo, pd):
             errs.append("%s: backbone moved during B3" % gid)
         if not buf_ok:
             errs.append("%s: buffers moved during B3" % gid)
+        if n_steps < 3 and (dom, h) != ("Security", 12):
+            errs.append("%s: only %d real steps available (<3)"
+                        % (gid, n_steps))
+        row["steps_run"] = n_steps
         print("B3 %s loss0=%.6f loss%d=%.6f moved=%d zero1=%d none1=%d"
-              % (gid, steps_log[0]["losses"][3], B3_STEPS,
+              % (gid, steps_log[0]["losses"][3], n_steps,
                  steps_log[-1]["losses"][3], len(moved),
                  step1_pattern["n_zero"], step1_pattern["n_none"]),
               flush=True)
@@ -406,9 +411,10 @@ def b5_timing(pinfo):
         perm = np.random.RandomState(P.SEED).permutation(n_train)
         torch.cuda.synchronize()
         times = []
+        n_full = max(1, n_train // P.BATCH)
         for si in range(B5_STEPS):
-            idx = perm[(si % (n_train // P.BATCH)) * P.BATCH:
-                       (si % (n_train // P.BATCH)) * P.BATCH + P.BATCH]
+            b = (si % n_full) * P.BATCH
+            idx = perm[b:min(b + P.BATCH, n_train)]
             xb = torch.from_numpy(np.ascontiguousarray(X[idx])).to(DEVICE)
             yb = torch.from_numpy(np.ascontiguousarray(Y[idx])).to(DEVICE)
             t0 = time.time()
