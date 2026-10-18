@@ -136,8 +136,6 @@ def main():
     steps_sum = 0
     for dom, h in groups:
         gid = P.group_id(dom, h)
-        want_steps = P.expected_steps(
-            int(splits[dom]["window_counts"][str(h)]["train"]))
         want_val = int(splits[dom]["window_counts"][str(h)]["val"])
         fp = group_fingerprint(gid, guards)
         ent = status["groups"].get(gid, {})
@@ -158,6 +156,8 @@ def main():
         res = train_one_group(dom, h, pinfo, out_dir,
                               device="cuda" if torch.cuda.is_available()
                               else "cpu")
+        want_steps = res["epochs_run"] * P.expected_steps(
+            int(splits[dom]["window_counts"][str(h)]["train"]))
         if res["steps"] != want_steps:
             die("[TIER-1] %s steps %d != %d" % (gid, res["steps"],
                                                 want_steps))
