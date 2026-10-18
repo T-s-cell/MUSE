@@ -10,6 +10,7 @@ must stay fully inside negative_control/. Exit 3 if a negative control
 is NOT detected or formal artifacts moved.
 """
 import argparse
+import hashlib
 import shutil
 import subprocess
 import sys
@@ -91,6 +92,15 @@ def perturb_verify(pinfo):
     np.savez(str(pb), **arrays_b, ckpt_names=raw["ckpt_names"])
     meta_b["npz_sha256"] = sha256_of(pb)
     meta_b["packed_sha256"] = packed_sha(arrays_b)
+    # consistent tamper: side digests must describe the tampered arrays
+    # too (mask buffer is float -> perturbed; backbone digest stays
+    # formal because strict restore backfills original MAE weights)
+    bh = hashlib.sha256()
+    for bn in sorted(meta["inventory"]["buffer_names"]):
+        bh.update(bn.encode())
+        bh.update(np.ascontiguousarray(
+            arrays_b[npz_key(bn)]).tobytes())
+    meta_b["buffer_sha256"] = bh.hexdigest()
     mb_path = nc / "consistent.meta.json"
     dump_json(mb_path, meta_b)
     r = subprocess.run(
