@@ -17,8 +17,9 @@ from repro_timemmd_common_v1.common import backbone_digest, \
     buffer_digest, pred_close, seed_everything
 from repro_timemmd_common_v1.muse_train import EarlyStopping, \
     build_optimizer, epoch_val_f64, gradient_gate, group_fingerprint, \
-    npz_key, packed_sha, restore_muse_ckpt_strict, save_muse_ckpt, \
-    set_type3_lr, train_config, weighted_batch_mean
+    npz_key, packed_sha, restore_muse_ckpt_pack, \
+    restore_muse_ckpt_strict, save_muse_ckpt, set_type3_lr, \
+    train_config, weighted_batch_mean
 
 PASS = []
 
@@ -291,6 +292,79 @@ def test_tamper_and_binding():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def test_pack_lite_restore():
+    tmp = tempfile.mkdtemp()
+    try:
+        m, meta = _ckpt_roundtrip_setup(tmp)
+        ck = Path(tmp) / "ck.npz"
+        z = dict(np.load(str(ck)))
+        names = [str(x) for x in z["ckpt_names"]]
+        adapter_names = [n for n in names
+                         if not n.startswith("vision_model.")]
+        kept = {"ckpt_names": z["ckpt_names"]}
+        for n in adapter_names:
+            kept[n.replace(".", "__")] = z[n.replace(".", "__")]
+        lite_npz = Path(tmp) / "adapter.npz"
+        np.savez(str(lite_npz), **kept)
+        lite = {
+            "gid": meta["gid"],
+            "n_arrays_adapter": len(adapter_names),
+            "adapter_npz_sha256": __import__("hashlib").sha256(
+                lite_npz.read_bytes()).hexdigest(),
+            "packed_sha256": packed_sha(
+                {k: v for k, v in kept.items() if k != "ckpt_names"}),
+            "backbone_sha256": meta["backbone_sha256"],
+            "buffer_sha256": meta["buffer_sha256"],
+        }
+        check("lite_arrays_118", len(adapter_names) == 118,
+              "got %d" % len(adapter_names))
+        seed_everything(P.SEED)
+        m2 = build_muse(load_ckpt=False)
+        configure_muse(m2, "Health", 48)
+        r = restore_muse_ckpt_pack(m2, lite_npz, meta, lite,
+                                   backfill=False)
+        check("lite_restore_ok", r["ok"] and
+              r["packed_sha256"] == lite["packed_sha256"])
+        m.eval()
+        m2.eval()
+        xb = _rand_batch(m, 3)
+        pa = forward_fused(m, xb).numpy()
+        pb = forward_fused(m2, xb).numpy()
+        c, mx, _ = pred_close(pb, pa, P.ATOL, P.RTOL)
+        check("lite_restore_pred_close", c, "max_abs=%.2e" % mx)
+        # tamper bytes -> sha gate
+        bad = Path(tmp) / "bad_adapter.npz"
+        raw = bytearray(lite_npz.read_bytes())
+        raw[len(raw) // 2] ^= 0xFF
+        bad.write_bytes(bytes(raw))
+        try:
+            restore_muse_ckpt_pack(m2, bad, meta, lite, backfill=False)
+            check("lite_tamper_rejected", False)
+        except SystemExit:
+            check("lite_tamper_rejected", True)
+        # wrong geometry binding
+        m3 = build_muse(load_ckpt=False)
+        configure_muse(m3, "Traffic", 6)
+        try:
+            restore_muse_ckpt_pack(m3, lite_npz, meta, lite,
+                                   backfill=False)
+            check("lite_binding_rejected", False)
+        except SystemExit:
+            check("lite_binding_rejected", True)
+        # dropped buffer -> key set gate
+        dropped = {k: v for k, v in kept.items()
+                   if not k.startswith("mask")}
+        ck2 = Path(tmp) / "nobuffer_adapter.npz"
+        np.savez(str(ck2), **dropped)
+        try:
+            restore_muse_ckpt_pack(m2, ck2, meta, lite, backfill=False)
+            check("lite_missing_buffer_rejected", False)
+        except SystemExit:
+            check("lite_missing_buffer_rejected", True)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def test_misc():
     check("expected_steps", P.expected_steps(100, 32) == 4
           and P.expected_steps(96, 32) == 3)
@@ -342,6 +416,7 @@ if __name__ == "__main__":
     test_val_f64_accum()
     test_ckpt_roundtrip()
     test_tamper_and_binding()
+    test_pack_lite_restore()
     test_misc()
     test_import_isolation()
     print("ALL %d LOCAL TESTS PASS" % len(PASS))

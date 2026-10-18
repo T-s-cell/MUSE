@@ -127,11 +127,18 @@ def main():
                for g in tstat["groups"].values())
     lines.append("- 36 组训练总耗时 %.1f min(单卡串行)| 单组峰值显存 %d MB"
                  % (tot_s / 60.0, peak))
-    lines.append("- epochs_run 分布:%s;early stop 全部自然触发(无人工截断)"
+    lines.append("- epochs_run 分布:%s"
                  % np.histogram([g.get("epochs_run") for g in
                                  tstat["groups"].values()],
                                 bins=[3, 4, 5, 6, 7, 8, 9, 10, 11])[0]
                  .tolist())
+    capped = sorted(gid for gid, g in tstat["groups"].items()
+                    if int(g.get("epochs_run", 0)) >= P.MAX_EPOCHS)
+    early = len(tstat["groups"]) - len(capped)
+    lines.append("- 停止原因:%d 组早停自然触发(patience=2);%d 组达到 "
+                 "%d 轮上限:%s(无人工截断)"
+                 % (early, len(capped), P.MAX_EPOCHS,
+                    "、".join(capped) if capped else "无"))
     lines.append("- 冻结核验:全部组 backbone+buffer 逐位不变;实际更新张量数 "
                  "min=%d max=%d(结构性零梯度按源码解释,不作门禁)"
                  % (min(g.get("n_changed_tensors", -1)

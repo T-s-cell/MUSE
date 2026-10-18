@@ -308,6 +308,91 @@ def restore_muse_ckpt_strict(model, npz_path, meta, backfill=True):
             "packed_sha256": meta["packed_sha256"]}
 
 
+def restore_muse_ckpt_pack(model, npz_path, meta, lite, backfill=True):
+    """Strict restore from the DELIVERED adapter-only pack file (118
+    arrays + full ckpt_names; vision_model.* stripped bitwise). Gates:
+    adapter file sha == lite sha -> geometry bindings -> exact key set
+    (118 adapter keys + ckpt_names) -> shape/dtype -> packed_sha over
+    the 118 == lite packed_sha -> copy_ -> live packed_sha equal -> MAE
+    backbone backfill (sha-checked, strict full load) -> backbone/buffer
+    digests equal the pack meta. The meta's npz_sha256/packed_sha256
+    keep pinning the FULL on-server npz and are NOT used against this
+    file. backfill=False is for CPU unit tests only."""
+    from repro_timemmd_common_v1.common import die
+    if sha256_of(npz_path) != lite["adapter_npz_sha256"]:
+        die("[TIER-1] adapter npz sha mismatch: %s" % npz_path)
+    if int(getattr(model, "context_len")) != int(meta["L"]) \
+            or int(getattr(model, "pred_len")) != int(meta["h"]) \
+            or int(getattr(model, "periodicity")) != int(meta["p"]):
+        die("[TIER-1] ckpt geometry binding mismatch for %s" % meta["gid"])
+
+    z = np.load(npz_path, allow_pickle=False)
+    stored_names = [str(x) for x in z["ckpt_names"]]
+    adapter_names = [n for n in stored_names
+                     if not n.startswith("vision_model.")]
+    expected_keys = sorted([npz_key(n) for n in adapter_names]
+                           + ["ckpt_names"])
+    if sorted(z.files) != expected_keys:
+        die("[TIER-1] adapter npz key set mismatch: %s" % npz_path)
+    if len(adapter_names) != int(lite["n_arrays_adapter"]):
+        die("[TIER-1] adapter name count %d != %d"
+            % (len(adapter_names), lite["n_arrays_adapter"]))
+
+    live = {}
+    for name, t in list(model.named_parameters()) + \
+            list(model.named_buffers()):
+        live[name] = t
+    missing = sorted(set(adapter_names) - set(live))
+    if missing:
+        die("[TIER-1] adapter keys absent from live model: %s"
+            % missing[:4])
+
+    packed = {}
+    for name in adapter_names:
+        arr = z[npz_key(name)]
+        t = live[name]
+        if arr.shape != tuple(t.shape) or \
+                arr.dtype != np.dtype(t.detach().cpu().numpy().dtype):
+            die("[TIER-1] adapter tensor mismatch %s: %s/%s vs %s/%s"
+                % (name, arr.shape, arr.dtype, tuple(t.shape),
+                   t.detach().cpu().numpy().dtype))
+        packed[npz_key(name)] = arr
+    if packed_sha(packed) != lite["packed_sha256"]:
+        die("[TIER-1] adapter packed_sha mismatch: %s" % npz_path)
+
+    with torch.no_grad():
+        for name in adapter_names:
+            live[name].copy_(torch.from_numpy(packed[npz_key(name)]))
+    live_packed = {npz_key(name): live[name].detach().cpu().numpy()
+                   for name in adapter_names}
+    if packed_sha(live_packed) != lite["packed_sha256"]:
+        die("[TIER-1] restored model != adapter ckpt (packed_sha): %s"
+            % npz_path)
+
+    wpath = P.mae_weights_path()
+    if backfill:
+        if sha256_of(wpath) != P.WEIGHTS_SHA256:
+            die("[TIER-1] MAE weights sha mismatch during pack restore")
+        ck = torch.load(wpath, map_location="cpu")
+        sd = model.state_dict()
+        for k, v in ck["model"].items():
+            fk = "vision_model." + k
+            if fk not in sd or tuple(sd[fk].shape) != tuple(v.shape):
+                die("[TIER-1] MAE backfill key/shape mismatch: %s" % fk)
+            sd[fk] = v.to(sd[fk].dtype)
+        model.load_state_dict(sd, strict=True)
+
+    if backbone_digest(model) != meta["backbone_sha256"]:
+        die("[TIER-1] backbone digest mismatch after pack restore: %s"
+            % npz_path)
+    if buffer_digest(model) != meta["buffer_sha256"]:
+        die("[TIER-1] buffer digest mismatch after pack restore: %s"
+            % npz_path)
+    return {"ok": True, "gid": meta["gid"],
+            "adapter_npz_sha256": lite["adapter_npz_sha256"],
+            "packed_sha256": lite["packed_sha256"]}
+
+
 # ---------------------------------------------------------- train loop
 
 def group_fingerprint(gid, guards):

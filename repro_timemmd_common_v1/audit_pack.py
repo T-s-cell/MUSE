@@ -14,7 +14,11 @@ sidecars for EXP-029.
                         (bitwise = full npz minus vision_model.* arrays,
                         the frozen MAE backbone identical across all 36
                         ckpts; ckpt_names still inventories the full
-                        npz) + meta json + pack_manifest.json.
+                        npz) + meta json + adapter_meta__<gid>.json
+                        (lite: adapter file sha + packed_sha over the
+                        118 + backbone/buffer digests — enables strict
+                        pack restore via muse_train.restore_muse_ckpt_
+                        pack) + pack_manifest.json.
                         ~40MB/pack. Full 452MB npz stays on the compute
                         server, pinned by npz_sha256 in each meta.
 
@@ -36,6 +40,21 @@ from repro_timemmd_common_v1.common import dump_json, load_json, \
 
 LIMIT = 50 * 1024 * 1024
 CKPT_GROUPS_PER_PACK = 9
+
+
+def _packed_sha(arrays):
+    """Same convention as muse_train.packed_sha (numpy-only twin so the
+    pack builder never imports torch): sorted npz-keyed name, shape,
+    dtype, bytes."""
+    import hashlib
+    h = hashlib.sha256()
+    for name in sorted(arrays):
+        a = np.asarray(arrays[name])
+        h.update(name.encode())
+        h.update(str(a.shape).encode())
+        h.update(str(a.dtype).encode())
+        h.update(np.ascontiguousarray(a).tobytes())
+    return h.hexdigest()
 
 
 def build_pack(out_dir, tag, stage_dir, extra_files):
@@ -128,16 +147,22 @@ def main():
         for pat in ("*.json", "*.md", "*.txt", "*.csv", "*.log"):
             for jf in sorted(out_root.glob(pat)):
                 (logs_stage / jf.name).write_text(jf.read_text())
-        for sub in ("preflight", "negative_control"):
+        for sub in ("preflight", "negative_control", "replay_pack",
+                    "version_evidence"):
             sdir = out_root / sub
             if sdir.is_dir():
                 dst = logs_stage / sub
                 dst.mkdir(parents=True, exist_ok=True)
-                for jf in sorted(sdir.rglob("*.json")):
+                suffixes = {".json", ".md", ".txt", ".diff"} \
+                    if sub in ("replay_pack", "version_evidence") \
+                    else {".json"}
+                for jf in sorted(sdir.rglob("*")):
+                    if not jf.is_file() or jf.suffix not in suffixes:
+                        continue
                     rel = jf.relative_to(sdir)
                     dst_j = dst / rel
                     dst_j.parent.mkdir(parents=True, exist_ok=True)
-                    dst_j.write_text(jf.read_text())
+                    dst_j.write_bytes(jf.read_bytes())
         for gdir in sorted((out_root / "runs").iterdir()):
             if gdir.is_dir():
                 dst = logs_stage / "runs" / gdir.name
@@ -183,19 +208,37 @@ def main():
                 meta = load_json(meta_f)
                 z = dict(np.load(str(npz_f)))
                 names = [str(x) for x in z["ckpt_names"]]
+                adapter_names = [n for n in names
+                                 if not n.startswith("vision_model.")]
                 kept = {"ckpt_names": z["ckpt_names"]}
-                for n in names:
-                    if not n.startswith("vision_model."):
-                        kept[n.replace(".", "__")] = z[n.replace(".", "__")]
+                for n in adapter_names:
+                    kept[n.replace(".", "__")] = z[n.replace(".", "__")]
                 staged_npz = ck_stage / npz_f.name
                 np.savez(str(staged_npz), **kept)
                 shutil.copyfile(str(meta_f), str(ck_stage / meta_f.name))
-                entries[P.group_id(dom, h)] = {
+                gid = P.group_id(dom, h)
+                lite = {
+                    "gid": gid,
+                    "n_arrays_adapter": len(adapter_names),
+                    "adapter_npz_sha256": sha256_of(staged_npz),
+                    "packed_sha256": _packed_sha(
+                        {k: v for k, v in kept.items()
+                         if k != "ckpt_names"}),
+                    "backbone_sha256": meta["backbone_sha256"],
+                    "buffer_sha256": meta["buffer_sha256"],
+                    "stripped_prefix": "vision_model.",
+                }
+                dump_json(ck_stage / ("adapter_meta__%s.json" % gid),
+                          lite)
+                entries[gid] = {
                     "full_npz_sha256": meta["npz_sha256"],
                     "full_npz_bytes": int(npz_f.stat().st_size),
-                    "adapter_npz_sha256": sha256_of(staged_npz),
+                    "adapter_npz_sha256": lite["adapter_npz_sha256"],
+                    "packed_sha256_adapter": lite["packed_sha256"],
                     "backbone_sha256": meta["backbone_sha256"],
-                    "n_arrays_full": int(meta["n_arrays"])}
+                    "n_arrays_full": int(meta["n_arrays"]),
+                    "n_arrays_adapter": len(adapter_names),
+                    "lite_meta": "adapter_meta__%s.json" % gid}
             dump_json(ck_stage / "pack_manifest.json", {
                 "stripped": "vision_model.* (frozen MAE backbone, "
                             "identical across all 36 ckpts)",
