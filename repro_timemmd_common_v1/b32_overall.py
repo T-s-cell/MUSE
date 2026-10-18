@@ -13,7 +13,7 @@ import numpy as np
 
 from repro_timemmd_common_v1 import protocol as P
 from repro_timemmd_common_v1.common import bitwise_equal, dump_json, \
-    setup_deterministic_env
+    load_json, setup_deterministic_env
 from repro_timemmd_common_v1.evaluate import metrics_from
 
 
@@ -60,13 +60,19 @@ def main():
             "abs_delta_mse": abs(m1["mse"] - m0["mse"]),
             "abs_delta_mae": abs(m1["mae"] - m0["mae"]),
             "bitwise_pred": bool(np.array_equal(p0, p1))}
-        ent = {"mse": m1["mse"], "mae": m1["mae"],
-               "b64_mse": m0["mse"], "b64_mae": m0["mae"]}
-        by_domain[dom] = ent
+        by_domain.setdefault(dom, []).append(
+            {"mse": m1["mse"], "mae": m1["mae"],
+             "b64_mse": m0["mse"], "b64_mae": m0["mae"]})
+
+    # per-domain = mean over the 4 horizon GROUPS (f64); 9-domain
+    # overall = mean over the 9 domains (f64). Same convention as
+    # evaluate.py (group scores f32, aggregation f64).
+    by_domain = {dom: {k: float(np.mean([r[k] for r in rows]))
+                       for k in ("mse", "mae", "b64_mse", "b64_mae")}
+                 for dom, rows in by_domain.items()}
 
     def overall(key):
-        doms = [float(np.mean([by_domain[d][key] for d in P.ORDER]))]
-        return doms[0]
+        return float(np.mean([by_domain[d][key] for d in P.ORDER]))
 
     b32_overall9 = {"mse": overall("mse"), "mae": overall("mae")}
     b64_overall9 = {"mse": overall("b64_mse"), "mae": overall("b64_mae")}
@@ -75,9 +81,28 @@ def main():
                "mae": float(np.mean([r["b32_mae"] for r in g]))}
     b64_o36 = {"mse": float(np.mean([r["b64_mse"] for r in g])),
                "mae": float(np.mean([r["b64_mae"] for r in g]))}
+
+    # the fixed per-domain aggregation must reproduce the FROZEN
+    # evaluation.json on the b64 side (same env, same convention)
+    eval9 = load_json(out_root / "evaluation.json")["overall_9domain_equal"]
+    if abs(b64_overall9["mse"] - eval9["mse"]) > 1e-12 or \
+            abs(b64_overall9["mae"] - eval9["mae"]) > 1e-12:
+        raise SystemExit(
+            "[FATAL] b64 9-domain aggregation mismatch vs "
+            "evaluation.json: %.16f/%.16f vs %.16f/%.16f"
+            % (b64_overall9["mse"], b64_overall9["mae"],
+               eval9["mse"], eval9["mae"]))
+
     result = {
         "env_note": "computed under the same env as evaluation.json "
-                    "(visionts_mmd); metrics_from f32-pairwise main",
+                    "(visionts_mmd); metrics_from f32-pairwise main; "
+                    "aggregation f64",
+        "aggregation_check": {
+            "b64_9domain_matches_evaluation_json": True,
+            "b32_9domain_minus_36group_mse":
+                b32_overall9["mse"] - b32_o36["mse"],
+            "b32_9domain_minus_36group_mae":
+                b32_overall9["mae"] - b32_o36["mae"]},
         "groups": groups,
         "overall_9domain_equal": {
             "b64": b64_overall9, "b32": b32_overall9,
