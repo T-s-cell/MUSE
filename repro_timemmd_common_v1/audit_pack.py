@@ -148,7 +148,7 @@ def main():
             for jf in sorted(out_root.glob(pat)):
                 (logs_stage / jf.name).write_text(jf.read_text())
         for sub in ("preflight", "negative_control", "replay_pack",
-                    "version_evidence"):
+                    "replay_b32", "version_evidence"):
             sdir = out_root / sub
             if sdir.is_dir():
                 dst = logs_stage / sub
@@ -185,6 +185,7 @@ def main():
             shutil.copyfile(str(f), str(val_stage / f.name))
         build_pack(out_dir, "pred_npz", out_root / "runs", [
             out_root / "replay_summary.json",
+            out_root / "b32_export",
             val_stage,
         ])
 

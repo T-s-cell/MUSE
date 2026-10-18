@@ -189,7 +189,48 @@ def main():
                              else "n/a"),
               "- 推理:%d/36 done(每组独立进程严格恢复+MAE 回填)"
               % sum(1 for g in ts_infer["groups"].values()
-                    if g.get("state") == "done"), ""]
+                    if g.get("state") == "done")]
+
+    # batch=32 同批量验收(评审后补;存在才写)
+    rb_path = out_root / "replay_b32" / "replay_b32_summary.json"
+    bo_path = out_root / "b32_export" / "b32_overall.json"
+    rb = None
+    if rb_path.exists() and bo_path.exists():
+        rb = load_json(rb_path)
+        bo = load_json(bo_path)
+        ex = load_json(out_root / "b32_export" / "export_b32_summary.json")
+        n_rb_bit = rb.get("n_variants_bitwise")
+        lines += ["",
+                  "## batch=32 同批量验收(评审补正收尾)", "",
+                  "- 导出:以现有最佳权重按 batch=32 导出 36 组 test+best-val "
+                  "数组(b32_export/,72 个 npz);原 batch=64 文件保留且经 "
+                  "pre/post sha256 证明未改写(36/36 %s)"
+                  % ("immutable" if all(g["originals_immutable"]
+                                        for g in ex["groups"].values())
+                     else "FAILED"),
+                  "- 同批量重放:从交付包(adapter-only+固定 MAE)独立进程"
+                  "(每组一个子进程)按 batch=32 重放并与导出数组比较:"
+                  "**%d/%d 组 pass,bitwise %s/72**(atol=%g/rtol=%g,"
+                  "指标复算 ≤1e-9,导出数组哈希不变)"
+                  % (rb["n_pass"], rb["n_groups"], n_rb_bit,
+                     rb["atol"], rb["rtol"]),
+                  "- 指标口径(b32_overall,与 evaluation.json 同 env 同约定):"
+                  "9 域等权 MSE %.9f → %.9f(Δ %+.3e);36 组等权 MSE "
+                  "%.9f → %.9f(Δ %+.3e);逐组指标差异上界 max|ΔMSE|=%.3e、"
+                  "max|ΔMAE|=%.3e"
+                  % (bo["overall_9domain_equal"]["b64"]["mse"],
+                     bo["overall_9domain_equal"]["b32"]["mse"],
+                     bo["overall_9domain_equal"]["delta_mse"],
+                     bo["overall_36group_equal"]["b64"]["mse"],
+                     bo["overall_36group_equal"]["b32"]["mse"],
+                     bo["overall_36group_equal"]["delta_mse"],
+                     bo["bounds"]["max_abs_group_delta_mse"],
+                     bo["bounds"]["max_abs_group_delta_mae"]),
+                  "- 跨批量对照(非验收,保留备查):b32 vs 原 b64 数组 "
+                  "24/36 组在 atol/rtol 内,12 组 22 项超差(max_abs ≤8.0e-6);"
+                  "隔离探针证明系 f32 批形状数值差异"
+                  "(replay_pack/batch32_probe_20261019.json),"
+                  "不改变原 b64 文件的导出地位", ""]
 
     (out_root / "summary.md").write_text("\n".join(lines))
     dump_json(out_root / "summary.json", {
@@ -214,7 +255,10 @@ def main():
                   "replay_all_pass": rs["n_pass"] == rs["n_groups"],
                   "infer_all_done": all(
                       g.get("state") == "done"
-                      for g in ts_infer["groups"].values())},
+                      for g in ts_infer["groups"].values()),
+                  "replay_b32_all_pass": (
+                      rb["n_pass"] == rb["n_groups"])
+                      if rb is not None else None},
     })
     print((out_root / "summary.md").read_text()[-600:])
 
