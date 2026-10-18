@@ -41,9 +41,9 @@ def run_group(dom, h):
     model = build_muse(load_ckpt=True)
     configure_muse(model, dom, h)
     model = model.to("cuda:0")
-    meta = restore_muse_ckpt_strict(
-        model, out_dir / P.ckpt_npz_name(dom, h),
-        load_json(out_dir / P.ckpt_meta_name(dom, h)))
+    meta = load_json(out_dir / P.ckpt_meta_name(dom, h))
+    restore_muse_ckpt_strict(
+        model, out_dir / P.ckpt_npz_name(dom, h), meta)
 
     dd = DomainData(pinfo["protocol_dir"], pinfo["splits"], dom)
     sp = dd.load_split(h, "test")
